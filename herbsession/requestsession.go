@@ -52,7 +52,7 @@ func (s *Session) Payloads() (*authority.Payloads, error) {
 func (s *Session) SavePayloads(p *authority.Payloads) error {
 	return s.Session.Set(s.fieldname(PayloadsField, true), p)
 }
-func (s *Session) Destory() error {
+func (s *Session) Destory() (bool, error) {
 	return s.Session.Destory()
 }
 func (s *Session) Save(key string, v interface{}) error {
