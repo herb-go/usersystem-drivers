@@ -273,6 +273,7 @@ func TestService(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.Stop()
+	tomluser.Flush()
 	s = usersystem.New()
 	ustatus = userstatus.MustNewAndInstallTo(s)
 	upassword = userpassword.MustNewAndInstallTo(s)
