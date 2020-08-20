@@ -31,7 +31,7 @@ func (u *Users) GetProfile(id string) (*profile.Profile, error) {
 	if userdata == nil {
 		return nil, user.ErrUserNotExists
 	}
-	return userdata.Profiles, nil
+	return userdata.Profiles.Clone(), nil
 }
 func (u *Users) UpdateProfile(id string, p *profile.Profile) error {
 	u.locker.Lock()
@@ -46,6 +46,7 @@ func (u *Users) UpdateProfile(id string, p *profile.Profile) error {
 			prf.WithFields(v)
 		}
 	}
+	userdata.Profiles = prf
 	return u.save()
 }
 
@@ -152,9 +153,18 @@ func (u *Users) Roles(uid string) (*role.Roles, error) {
 	if us == nil {
 		return nil, user.ErrUserNotExists
 	}
-	return us.Roles, nil
+	return us.Roles.Clone(), nil
 }
-
+func (u *Users) SetRoles(uid string, r *role.Roles) error {
+	u.locker.Lock()
+	defer u.locker.Unlock()
+	us := u.uidmap[uid]
+	if us == nil {
+		return user.ErrUserNotExists
+	}
+	us.Roles = r
+	return nil
+}
 func (u *Users) Account(uid string) (*user.Accounts, error) {
 	u.locker.RLock()
 	defer u.locker.RUnlock()

@@ -7,13 +7,17 @@ import (
 	"testing"
 
 	"github.com/herb-go/herb/user"
+	"github.com/herb-go/herbsecurity/authorize/role"
 
 	"github.com/herb-go/herb/user/status"
 	"github.com/herb-go/providers/herb/statictoml"
 	"github.com/herb-go/usersystem"
 	"github.com/herb-go/usersystem-drivers/tomluser"
 	"github.com/herb-go/usersystem/services/userpassword"
+	"github.com/herb-go/usersystem/services/userprofile"
+	"github.com/herb-go/usersystem/services/userrole"
 	"github.com/herb-go/usersystem/services/userstatus"
+	"github.com/herb-go/usersystem/services/userterm"
 	"github.com/herb-go/usersystem/usercreate"
 	"github.com/herb-go/usersystem/userpurge"
 )
@@ -56,9 +60,9 @@ func TestService(t *testing.T) {
 	upassword := userpassword.MustNewAndInstallTo(s)
 
 	// uaccounts := useraccount.MustNewAndInstallTo(s)
-	// uprofiles := userprofile.MustNewAndInstallTo(s)
-	// uterm := userterm.MustNewAndInstallTo(s)
-	// uroles := userrole.MustNewAndInstallTo(s)
+	uprofiles := userprofile.MustNewAndInstallTo(s)
+	uterm := userterm.MustNewAndInstallTo(s)
+	uroles := userrole.MustNewAndInstallTo(s)
 	s.Ready()
 	s.Configuring()
 	err = testConfig(source).Execute(s)
@@ -108,6 +112,30 @@ func TestService(t *testing.T) {
 	if err != user.ErrUserNotExists {
 		t.Fatal(err)
 	}
+	r, err := uroles.Roles(uid)
+	if r != nil || err != user.ErrUserNotExists {
+		t.Fatal(r, err)
+	}
+	err = uroles.Service.(*tomluser.Users).SetRoles(uid, nil)
+	if err != user.ErrUserNotExists {
+		t.Fatal(r, err)
+	}
+	term, err := uterm.CurrentTerm(uid)
+	if term != "" || err != user.ErrUserNotExists {
+		t.Fatal(r, err)
+	}
+	term, err = uterm.StartNewTerm(uid)
+	if term != "" || err != user.ErrUserNotExists {
+		t.Fatal(r, err)
+	}
+	p, err := uprofiles.LoadProfile(uid)
+	if p != nil || err != user.ErrUserNotExists {
+		t.Fatal(p, err)
+	}
+	err = uprofiles.UpdateProfile(nil, uid, p)
+	if err != user.ErrUserNotExists {
+		t.Fatal(err)
+	}
 	err = usercreate.ExecCreate(s, uid)
 	if err != nil {
 		t.Fatal(err)
@@ -138,5 +166,55 @@ func TestService(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	ok, err = upassword.VerifyPassword(uid, "password")
+	if ok != false || err != nil {
+		t.Fatal(err)
+	}
+	err = upassword.UpdatePassword(uid, "password")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ok, err = upassword.VerifyPassword(uid, "password")
+	if ok != true || err != nil {
+		t.Fatal(err)
+	}
+	r, err = uroles.Roles(uid)
+	if r == nil || err != nil {
+		t.Fatal(r, err)
+	}
+	err = uroles.Service.(*tomluser.Users).SetRoles(uid, role.NewRoles(role.NewRole("test")))
+	if err != nil {
+		t.Fatal(r, err)
+	}
+	r, err = uroles.Roles(uid)
+	if !r.Contains(role.NewRoles(role.NewRole("test"))) || err != nil {
+		t.Fatal(r, err)
+	}
+	term, err = uterm.CurrentTerm(uid)
+	if err != nil {
+		panic(err)
+	}
+	newterm, err := uterm.StartNewTerm(uid)
+	if err != nil {
+		panic(err)
+	}
+	if newterm == term {
+		t.Fatal(newterm)
+	}
+	p, err = uprofiles.LoadProfile(uid)
+	if len(p.Data()) != 0 || err != nil {
+		t.Fatal(p, err)
+	}
+	p.With("test1", "test1value").With("notexist", "notexistvalue")
+	err = uprofiles.UpdateProfile(nil, uid, p)
+	if err != nil {
+		t.Fatal(p, err)
+	}
+	p, err = uprofiles.LoadProfile(uid)
+	if len(p.Data()) != 1 || err != nil {
+		t.Fatal(p, err)
+	}
+	if p.Load("test1") != "test1value" || p.Load("notexist") != "" {
+		t.Fatal(p)
+	}
 }
