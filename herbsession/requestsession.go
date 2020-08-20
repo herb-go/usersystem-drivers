@@ -42,7 +42,7 @@ func (s *Session) SaveUID(uid string) error {
 }
 func (s *Session) Payloads() (*authority.Payloads, error) {
 	p := authority.NewPayloads()
-	err := s.Session.Get(s.fieldname(PayloadsField, true), p)
+	err := s.Session.Get(s.fieldname(PayloadsField, true), &p)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (s *Session) Remove(key string) error {
 	return s.Session.Del(s.fieldname(key, false))
 }
 func (s *Session) IsNotFoundError(err error) bool {
-	return s.IsNotFoundError(err)
+	return s.Session.IsNotFoundError(err)
 }
 
 func NewSession() *Session {
