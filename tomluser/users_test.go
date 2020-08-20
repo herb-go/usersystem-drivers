@@ -13,6 +13,7 @@ import (
 	"github.com/herb-go/providers/herb/statictoml"
 	"github.com/herb-go/usersystem"
 	"github.com/herb-go/usersystem-drivers/tomluser"
+	"github.com/herb-go/usersystem/services/useraccount"
 	"github.com/herb-go/usersystem/services/userpassword"
 	"github.com/herb-go/usersystem/services/userprofile"
 	"github.com/herb-go/usersystem/services/userrole"
@@ -58,8 +59,7 @@ func TestService(t *testing.T) {
 	s = usersystem.New()
 	ustatus := userstatus.MustNewAndInstallTo(s)
 	upassword := userpassword.MustNewAndInstallTo(s)
-
-	// uaccounts := useraccount.MustNewAndInstallTo(s)
+	uaccounts := useraccount.MustNewAndInstallTo(s)
 	uprofiles := userprofile.MustNewAndInstallTo(s)
 	uterm := userterm.MustNewAndInstallTo(s)
 	uroles := userrole.MustNewAndInstallTo(s)
@@ -70,7 +70,6 @@ func TestService(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.Start()
-	defer s.Stop()
 	uid := "test"
 	ok, err := usercreate.ExecExist(s, uid)
 	if ok || err != nil {
@@ -136,7 +135,23 @@ func TestService(t *testing.T) {
 	if err != user.ErrUserNotExists {
 		t.Fatal(err)
 	}
+	a, err := uaccounts.Account(uid)
+	if a != nil || err != user.ErrUserNotExists {
+		t.Fatal(err)
+	}
+	err = uaccounts.BindAccount(uid, user.NewAccount())
+	if err != user.ErrUserNotExists {
+		t.Fatal(err)
+	}
+	err = uaccounts.UnbindAccount(uid, user.NewAccount())
+	if err != user.ErrUserNotExists {
+		t.Fatal(err)
+	}
 	err = usercreate.ExecCreate(s, uid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = usercreate.ExecCreate(s, "test2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,5 +231,93 @@ func TestService(t *testing.T) {
 	}
 	if p.Load("test1") != "test1value" || p.Load("notexist") != "" {
 		t.Fatal(p)
+	}
+	a, err = uaccounts.Account(uid)
+	if len(a.Data()) != 0 || err != nil {
+		t.Fatal(err)
+	}
+	acc := user.NewAccount()
+	acc.Account = "testacc"
+	accid, err := uaccounts.AccountToUID(acc)
+	if err != nil || accid != "" {
+		t.Fatal(accid, err)
+	}
+	err = uaccounts.BindAccount(uid, acc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	accid, err = uaccounts.AccountToUID(acc)
+	if err != nil || accid != uid {
+		t.Fatal(accid, err)
+	}
+	err = uaccounts.BindAccount("test2", acc)
+	if err != user.ErrAccountBindingExists {
+		t.Fatal(err)
+	}
+	err = uaccounts.UnbindAccount(uid, acc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = uaccounts.UnbindAccount("test2", acc)
+	if err != user.ErrAccountUnbindingNotExists {
+		t.Fatal(err)
+	}
+	accid, err = uaccounts.AccountToUID(acc)
+	if err != nil || accid != "" {
+		t.Fatal(accid, err)
+	}
+	err = uaccounts.BindAccount(uid, acc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Stop()
+	s = usersystem.New()
+	ustatus = userstatus.MustNewAndInstallTo(s)
+	upassword = userpassword.MustNewAndInstallTo(s)
+	uaccounts = useraccount.MustNewAndInstallTo(s)
+	uprofiles = userprofile.MustNewAndInstallTo(s)
+	uterm = userterm.MustNewAndInstallTo(s)
+	uroles = userrole.MustNewAndInstallTo(s)
+	s.Ready()
+	s.Configuring()
+	err = testConfig(source).Execute(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Start()
+	defer s.Stop()
+	st, err = ustatus.LoadStatus(uid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st != status.StatusBanned {
+		t.Fatal(st)
+	}
+	ok, err = upassword.VerifyPassword(uid, "password")
+	if ok != true || err != nil {
+		t.Fatal(err)
+	}
+	r, err = uroles.Roles(uid)
+	if !r.Contains(role.NewRoles(role.NewRole("test"))) || err != nil {
+		t.Fatal(r, err)
+	}
+
+	term, err = uterm.CurrentTerm(uid)
+	if err != nil {
+		panic(err)
+	}
+	if newterm != term {
+		t.Fatal(newterm)
+	}
+	p, err = uprofiles.LoadProfile(uid)
+	if len(p.Data()) != 1 || err != nil {
+		t.Fatal(p, err)
+	}
+	if p.Load("test1") != "test1value" || p.Load("notexist") != "" {
+		t.Fatal(p)
+	}
+	accid, err = uaccounts.AccountToUID(acc)
+	if err != nil || accid != uid {
+		t.Fatal(accid, err)
 	}
 }

@@ -224,6 +224,10 @@ func (u *Users) BindAccount(uid string, account *user.Account) error {
 func (u *Users) UnbindAccount(uid string, account *user.Account) error {
 	u.locker.Lock()
 	defer u.locker.Unlock()
+	accountuser := u.uidmap[uid]
+	if accountuser == nil {
+		return user.ErrUserNotExists
+	}
 	accountid, err := u.accountToUID(account)
 	if err != nil {
 		return err
