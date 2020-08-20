@@ -1,6 +1,8 @@
 package tomluser_test
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"io/ioutil"
 	"os"
 	"path"
@@ -319,5 +321,23 @@ func TestService(t *testing.T) {
 	accid, err = uaccounts.AccountToUID(acc)
 	if err != nil || accid != uid {
 		t.Fatal(accid, err)
+	}
+	err = usercreate.ExecRemove(s, uid)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestHash(t *testing.T) {
+	u := tomluser.NewUser()
+	u.Salt = "salt"
+	p, err := tomluser.Hash("", "1234", u)
+	if err != nil || p != "1234" {
+		t.Fatal(p, err)
+	}
+	p, err = tomluser.Hash("md5", "1234", u)
+	d := md5.Sum([]byte("1234" + "salt"))
+	if err != nil || p != hex.EncodeToString(d[:]) {
+		t.Fatal(p, err)
 	}
 }
