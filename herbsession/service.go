@@ -29,7 +29,7 @@ func (s *Service) Execute(us *usersystem.UserSystem) error {
 	hs.Service = s
 	return nil
 }
-func (s *Service) GetSession(id string, st usersystem.SessionType) (*usersystem.Session, error) {
+func (s *Service) GetSession(st usersystem.SessionType, id string) (*usersystem.Session, error) {
 	ts := s.Store.GetSession(id)
 	payloads := authority.NewPayloads()
 	err := ts.Get(PayloadsField, &payloads)
@@ -37,6 +37,10 @@ func (s *Service) GetSession(id string, st usersystem.SessionType) (*usersystem.
 		return nil, err
 	}
 	return usersystem.NewSession().WithType(st).WithPayloads(payloads), nil
+}
+
+func (s *Service) RevokeSession(st usersystem.SessionType, code string) (bool, error) {
+	return s.Store.Driver.Delete(code)
 }
 func (s *Service) SessionMiddleware() func(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	return middleware.New(s.Store.InstallMiddleware(), s.Store.AutoGenerateMiddleware()).ServeMiddleware
