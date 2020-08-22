@@ -85,29 +85,4 @@ func TestService(t *testing.T) {
 	if uid != "test" {
 		t.Fatal(uid)
 	}
-	var v string
-	err = session.Load("notexist", &v)
-	if !session.IsNotFoundError(err) {
-		t.Fatal(err)
-	}
-	err = session.Save("testfield", v)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = session.Load("testfield", &v)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = session.Remove("testfield")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = session.Load("notexist", &v)
-	if !session.IsNotFoundError(err) {
-		t.Fatal(err)
-	}
-	ok, err := session.Destory()
-	if ok != false || err != nil {
-		t.Fatal(ok, err)
-	}
 }

@@ -3,6 +3,8 @@ package herbsession
 import (
 	"net/http"
 
+	"github.com/herb-go/herbsecurity/authority"
+
 	"github.com/herb-go/usersystem/httpusersystem/services/httpsession"
 
 	"github.com/herb-go/herb/middleware"
@@ -27,27 +29,30 @@ func (s *Service) Execute(us *usersystem.UserSystem) error {
 	hs.Service = s
 	return nil
 }
-func (s *Service) GetSession(id string, st usersystem.SessionType) (usersystem.Session, error) {
+func (s *Service) GetSession(id string, st usersystem.SessionType) (*usersystem.Session, error) {
 	ts := s.Store.GetSession(id)
-	us := NewSession()
-	us.Prefix = s.Prefix
-	us.SessionType = st
-	us.Session = ts
-	return us, nil
+	payloads := authority.NewPayloads()
+	err := ts.Get(PayloadsField, &payloads)
+	if err != nil {
+		return nil, err
+	}
+	return usersystem.NewSession().WithType(st).WithPayloads(payloads), nil
 }
 func (s *Service) SessionMiddleware() func(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	return middleware.New(s.Store.InstallMiddleware(), s.Store.AutoGenerateMiddleware()).ServeMiddleware
 }
-func (s *Service) GetRequestSession(r *http.Request, st usersystem.SessionType) (usersystem.Session, error) {
+func (s *Service) GetRequestSession(r *http.Request, st usersystem.SessionType) (*usersystem.Session, error) {
 	ts, err := s.Store.GetRequestSession(r)
 	if err != nil {
 		return nil, err
 	}
-	us := NewSession()
-	us.Prefix = s.Prefix
-	us.SessionType = st
-	us.Session = ts
-	return us, nil
+	payloads := authority.NewPayloads()
+	err = ts.Get(PayloadsField, &payloads)
+	if err != nil {
+		return nil, err
+	}
+	return usersystem.NewSession().WithType(st).WithPayloads(payloads), nil
+
 }
 
 //Start start service
