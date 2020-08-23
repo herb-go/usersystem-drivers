@@ -57,6 +57,9 @@ func (s *Service) GetRequestSession(r *http.Request, st usersystem.SessionType) 
 	payloads := authority.NewPayloads()
 	err = ts.Get(s.PayloadsField(), &payloads)
 	if err != nil {
+		if s.Store.IsNotFoundError(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return usersystem.NewSession().WithType(st).WithPayloads(payloads), nil

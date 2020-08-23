@@ -3,6 +3,7 @@ package herbsession_test
 import (
 	"io/ioutil"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/httptest"
 	"testing"
 
@@ -23,7 +24,7 @@ func testConfig() *herbsession.Config {
 	config.TokenContextName = "token"
 	config.CookieName = "cookiename"
 	config.CookiePath = "/"
-	config.CookieSecure = true
+	config.CookieSecure = false
 	config.UpdateActiveIntervalInSecond = 100
 	return &herbsession.Config{
 		Prefix:      "test",
@@ -46,18 +47,44 @@ func TestService(t *testing.T) {
 	}
 	s.Start()
 	defer s.Stop()
-	app := middleware.New()
-	app.Use(hs.SessionMiddleware())
-	app.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux := &http.ServeMux{}
+	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		session, err := hs.Login(r, "testuid")
 		if err != nil {
 			panic(err)
 		}
 		w.Write([]byte(session.ID))
 	})
+	mux.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
+		_, err := hs.Logout(r)
+		if err != nil {
+			panic(err)
+		}
+		w.Write([]byte("ok"))
+	})
+	mux.HandleFunc("/uid", func(w http.ResponseWriter, r *http.Request) {
+		session, err := hs.GetRequestSession(r)
+		if err != nil {
+			panic(err)
+		}
+		if session == nil {
+			w.Write([]byte{})
+			return
+		}
+		w.Write([]byte(session.UID()))
+	})
+	app := middleware.New()
+	app.Use(hs.SessionMiddleware())
+	app.Handle(mux)
 	server := httptest.NewServer(app)
 	defer server.Close()
-	resp, err := http.DefaultClient.Get(server.URL)
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		panic(err)
+	}
+	client := &http.Client{}
+	client.Jar = jar
+	resp, err := client.Get(server.URL + "/login")
 	if err != nil {
 		panic(err)
 	}
@@ -65,6 +92,7 @@ func TestService(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
+	resp.Body.Close()
 	sid := string(bs)
 	session, err := hs.GetSession(hs.Type, sid)
 	if err != nil {
@@ -77,4 +105,36 @@ func TestService(t *testing.T) {
 	if uid != "testuid" {
 		t.Fatal(uid)
 	}
+	resp, err = client.Get(server.URL + "/uid")
+	if err != nil {
+		panic(err)
+	}
+	bs, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	resp.Body.Close()
+	uid = string(bs)
+	if uid != "testuid" {
+		t.Fatal(uid)
+	}
+	resp, err = client.Get(server.URL + "/logout")
+	if err != nil {
+		panic(err)
+	}
+	resp.Body.Close()
+	resp, err = client.Get(server.URL + "/uid")
+	if err != nil {
+		panic(err)
+	}
+	bs, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	resp.Body.Close()
+	uid = string(bs)
+	if uid != "" {
+		t.Fatal(uid)
+	}
+
 }
