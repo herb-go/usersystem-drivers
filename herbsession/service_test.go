@@ -49,11 +49,11 @@ func TestService(t *testing.T) {
 	app := middleware.New()
 	app.Use(hs.SessionMiddleware())
 	app.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, err = httpsession.ExecLogin(s, session, "test")
+		session, err := hs.Login(r, "testuid")
 		if err != nil {
 			panic(err)
 		}
-		w.Write([]byte(session.ID()))
+		w.Write([]byte(session.ID))
 	})
 	server := httptest.NewServer(app)
 	defer server.Close()
@@ -66,18 +66,15 @@ func TestService(t *testing.T) {
 		panic(err)
 	}
 	sid := string(bs)
-	session, err := hs.GetSession(sid, hs.Type)
+	session, err := hs.GetSession(hs.Type, sid)
 	if err != nil {
 		t.Fatal(err, sid)
 	}
-	if session == nil || session.Type() != httpsession.SessionType {
+	if session == nil || session.Type != httpsession.SessionType {
 		t.Fatal()
 	}
-	uid, err := session.UID()
-	if err != nil {
-		panic(err)
-	}
-	if uid != "test" {
+	uid := session.UID()
+	if uid != "testuid" {
 		t.Fatal(uid)
 	}
 }

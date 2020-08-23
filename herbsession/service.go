@@ -63,8 +63,20 @@ func (s *Service) GetRequestSession(r *http.Request, st usersystem.SessionType) 
 
 }
 
-func (s *Service) LoginRequestSession(r *http.Request, payloads *authority.Payloads) error {
-	return s.Store.Set(r, s.PayloadsField(), payloads)
+func (s *Service) LoginRequestSession(r *http.Request, payloads *authority.Payloads) (*usersystem.Session, error) {
+	err := s.Store.Set(r, s.PayloadsField(), payloads)
+	if err != nil {
+		return nil, err
+	}
+	ts, err := s.Store.GetRequestSession(r)
+	if err != nil {
+		return nil, err
+	}
+	id, err := ts.Token()
+	if err != nil {
+		return nil, err
+	}
+	return usersystem.NewSession().WithID(id).WithPayloads(payloads.Clone()), nil
 }
 func (s *Service) LogoutRequestSession(r *http.Request) (bool, error) {
 	return true, s.Store.Del(r, s.PayloadsField())
