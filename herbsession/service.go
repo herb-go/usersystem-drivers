@@ -17,6 +17,10 @@ type Service struct {
 	Store  *session.Store
 }
 
+func (s *Service) PayloadsField() string {
+	return s.Prefix + "." + PayloadsField
+}
+
 func (s *Service) Execute(us *usersystem.UserSystem) error {
 	v, err := us.GetConfigurableService(httpsession.ServiceName)
 	if err != nil {
@@ -32,7 +36,7 @@ func (s *Service) Execute(us *usersystem.UserSystem) error {
 func (s *Service) GetSession(st usersystem.SessionType, id string) (*usersystem.Session, error) {
 	ts := s.Store.GetSession(id)
 	payloads := authority.NewPayloads()
-	err := ts.Get(PayloadsField, &payloads)
+	err := ts.Get(s.PayloadsField(), &payloads)
 	if err != nil {
 		return nil, err
 	}
@@ -51,12 +55,19 @@ func (s *Service) GetRequestSession(r *http.Request, st usersystem.SessionType) 
 		return nil, err
 	}
 	payloads := authority.NewPayloads()
-	err = ts.Get(PayloadsField, &payloads)
+	err = ts.Get(s.PayloadsField(), &payloads)
 	if err != nil {
 		return nil, err
 	}
 	return usersystem.NewSession().WithType(st).WithPayloads(payloads), nil
 
+}
+
+func (s *Service) LoginRequestSession(r *http.Request, payloads *authority.Payloads) error {
+	return s.Store.Set(r, s.PayloadsField(), payloads)
+}
+func (s *Service) LogoutRequestSession(r *http.Request) (bool, error) {
+	return true, s.Store.Del(r, s.PayloadsField())
 }
 
 //Start start service

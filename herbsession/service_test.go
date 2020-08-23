@@ -12,7 +12,6 @@ import (
 	"github.com/herb-go/usersystem"
 	"github.com/herb-go/usersystem-drivers/herbsession"
 	"github.com/herb-go/usersystem/httpusersystem/services/httpsession"
-	"github.com/herb-go/usersystem/usersession"
 )
 
 func testConfig() *herbsession.Config {
@@ -50,11 +49,7 @@ func TestService(t *testing.T) {
 	app := middleware.New()
 	app.Use(hs.SessionMiddleware())
 	app.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, err := hs.GetRequestSession(r)
-		if err != nil {
-			panic(err)
-		}
-		err = usersession.Login(s, session, "test")
+		session, err = httpsession.ExecLogin(s, session, "test")
 		if err != nil {
 			panic(err)
 		}
