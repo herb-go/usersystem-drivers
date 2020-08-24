@@ -2,6 +2,7 @@ package herbsession
 
 import (
 	"github.com/herb-go/session"
+	"github.com/herb-go/usersystem"
 )
 
 type Config struct {
@@ -19,4 +20,12 @@ func (c *Config) CreateService() (*Service, error) {
 	}
 	s.Store = store
 	return s, nil
+}
+
+func (c *Config) Execute(s *usersystem.UserSystem) error {
+	service, err := c.CreateService()
+	if err != nil {
+		return err
+	}
+	return service.Execute(s)
 }
