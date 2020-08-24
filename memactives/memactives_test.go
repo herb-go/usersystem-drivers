@@ -63,6 +63,12 @@ func TestService(t *testing.T) {
 	if err != nil || len(a) != 1 || a[0].SessionID != "testid" {
 		t.Fatal(len(a), err)
 	}
+	a, err = as.GetActiveSessions("notexist", "testuid")
+	if err != nil || len(a) != 0 {
+		t.Fatal(len(a), err)
+	}
+	service := as.Service.(*Service)
+	service.Stores["test"].Update()
 	time.Sleep(2 * testDuration)
 	a, err = as.GetActiveSessions("test", "testuid")
 	if err != nil || len(a) != 0 {
@@ -76,6 +82,10 @@ func TestService(t *testing.T) {
 	if err != nil || len(a) != 1 || a[0].SessionID != "testid" {
 		t.Fatal(len(a), err)
 	}
+	err = as.PurgeActiveSession("", "testuid", session.Payloads.LoadString(activesessions.PayloadSerialNumber))
+	if err != nil {
+		t.Fatal()
+	}
 	err = as.PurgeActiveSession("test", "testuid", session.Payloads.LoadString(activesessions.PayloadSerialNumber))
 	if err != nil {
 		t.Fatal()
@@ -84,6 +94,7 @@ func TestService(t *testing.T) {
 	if err != nil {
 		t.Fatal()
 	}
+
 	a, err = as.GetActiveSessions("test", "testuid")
 	if err != nil || len(a) != 0 {
 		t.Fatal(len(a), err)
