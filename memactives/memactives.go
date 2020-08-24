@@ -1,4 +1,4 @@
-package inmemoryactivesessions
+package memactives
 
 import (
 	"strconv"

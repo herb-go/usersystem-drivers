@@ -1,4 +1,4 @@
-package inmemoryactivesessions
+package memactives
 
 import (
 	"time"
@@ -16,7 +16,7 @@ func (c *Config) CreateService() (*Service, error) {
 		s.Stores[k] = NewStoreList()
 		store := NewStore()
 		store.CreatedTime = time.Now()
-		s.Stores[k].List[0] = store
+		s.Stores[k].List = []*Store{store}
 		s.Stores[k].Duration = c.Durations[k]
 	}
 	return s, nil
