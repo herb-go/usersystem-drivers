@@ -13,8 +13,8 @@ var testDuration = time.Millisecond
 
 func testConfig() *Config {
 	return &Config{
-		Durations: map[usersystem.SessionType]time.Duration{
-			"test": testDuration,
+		Durations: map[usersystem.SessionType]string{
+			"test": testDuration.String(),
 		},
 	}
 }

@@ -1,23 +1,32 @@
 package memactives
 
 import (
+	"errors"
 	"time"
 
 	"github.com/herb-go/usersystem"
 )
 
 type Config struct {
-	Durations map[usersystem.SessionType]time.Duration
+	Durations map[string]string
 }
 
 func (c *Config) CreateService() (*Service, error) {
 	s := NewService()
-	for k := range c.Durations {
+	for ks := range c.Durations {
+		k := usersystem.SessionType(ks)
+		d, err := time.ParseDuration(c.Durations[ks])
+		if err != nil {
+			return nil, err
+		}
+		if d <= 0 {
+			return nil, errors.New("duration must larger than 0")
+		}
 		s.Stores[k] = NewStoreList()
 		store := NewStore()
 		store.CreatedTime = time.Now()
 		s.Stores[k].List = []*Store{store}
-		s.Stores[k].Duration = c.Durations[k]
+		s.Stores[k].Duration = d
 	}
 	return s, nil
 }
