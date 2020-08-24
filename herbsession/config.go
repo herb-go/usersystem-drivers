@@ -29,3 +29,14 @@ func (c *Config) Execute(s *usersystem.UserSystem) error {
 	}
 	return service.Execute(s)
 }
+
+var DirectiveFactory = func(loader func(v interface{}) error) (usersystem.Directive, error) {
+	c := &Config{}
+	err := loader(c)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}
