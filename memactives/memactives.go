@@ -20,7 +20,7 @@ func (d *UserData) OnSessionActive(session *usersystem.Session) {
 	}
 	active, ok := (*d)[sn]
 	if !ok {
-		active := &activesessions.Active{}
+		active = &activesessions.Active{}
 		active.SessionID = session.ID
 		(*d)[sn] = active
 	}
@@ -50,12 +50,10 @@ type Store struct {
 
 func (s *Store) OnSessionActive(session *usersystem.Session) {
 	uid := session.UID()
-	if uid == "" {
-		return
-	}
 	ud, ok := s.Data[uid]
 	if !ok {
-		return
+		ud = NewUserdata()
+		s.Data[uid] = ud
 	}
 	ud.OnSessionActive(session)
 }
@@ -108,7 +106,7 @@ func (l *StoreList) GetActiveSessions(uid string) []*activesessions.Active {
 			}
 		}
 	}
-	result := make([]*activesessions.Active, len(all))
+	result := make([]*activesessions.Active, 0, len(all))
 	for k := range all {
 		result = append(result, all[k])
 	}
@@ -138,7 +136,7 @@ func (l *StoreList) Update() {
 	l.Locker.Lock()
 	defer l.Locker.Unlock()
 	list := make([]*Store, 0, len(l.List))
-	list[0] = NewStore()
+	list = append(list, NewStore())
 	list[0].CreatedTime = time.Now()
 	deadline := list[0].CreatedTime.Add(-l.Duration)
 	for k := range l.List {
@@ -184,6 +182,9 @@ func (s *Service) GetActiveSessions(st usersystem.SessionType, uid string) ([]*a
 	return stores.GetActiveSessions(uid), nil
 }
 func (s *Service) PurgeActiveSession(st usersystem.SessionType, uid string, serialnumber string) error {
+	if uid == "" || serialnumber == "" {
+		return nil
+	}
 	stores, ok := s.Stores[st]
 	if !ok {
 		return nil
