@@ -8,10 +8,10 @@ import (
 	"path"
 	"testing"
 
-	"github.com/herb-go/herb/user"
+	"github.com/herb-go/user"
 	"github.com/herb-go/herbsecurity/authorize/role"
 
-	"github.com/herb-go/herb/user/status"
+	"github.com/herb-go/user/status"
 	"github.com/herb-go/providers/herb/statictoml"
 	"github.com/herb-go/usersystem"
 	"github.com/herb-go/usersystem-drivers/tomluser"

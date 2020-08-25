@@ -7,7 +7,7 @@ import (
 
 	"github.com/herb-go/usersystem/services/useraccount"
 
-	"github.com/herb-go/herb/user"
+	"github.com/herb-go/user"
 	"github.com/herb-go/usersystem"
 )
 
