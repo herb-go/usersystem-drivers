@@ -13,7 +13,7 @@ var testDuration = time.Millisecond
 
 func testConfig() *Config {
 	return &Config{
-		Durations: map[usersystem.SessionType]string{
+		Durations: map[string]string{
 			"test": testDuration.String(),
 		},
 	}
@@ -31,6 +31,10 @@ func TestService(t *testing.T) {
 	}
 	s.Start()
 	defer s.Stop()
+	err = as.OnSessionActive(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	session := usersystem.NewSession()
 	err = as.OnSessionActive(session)
 	if err != nil {

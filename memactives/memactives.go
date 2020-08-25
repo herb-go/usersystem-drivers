@@ -167,6 +167,9 @@ func (s *Service) Config(st usersystem.SessionType) (*activesessions.Config, err
 	}, nil
 }
 func (s *Service) OnSessionActive(session *usersystem.Session) error {
+	if session == nil {
+		return nil
+	}
 	stores, ok := s.Stores[session.Type]
 	if !ok {
 		return nil

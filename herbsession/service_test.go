@@ -274,7 +274,7 @@ func TestCacheService(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		if session == nil {
+		if session == nil || session.ID == "" {
 			w.Write([]byte{})
 			return
 		}
@@ -331,7 +331,7 @@ func TestCacheService(t *testing.T) {
 	if err != nil {
 		t.Fatal(err, sid)
 	}
-	if session == nil || session.Type != websession.SessionType {
+	if session == nil || session.Type != websession.SessionType || session.ID == "" {
 		t.Fatal()
 	}
 	uid := session.UID()

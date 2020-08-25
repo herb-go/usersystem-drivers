@@ -69,7 +69,7 @@ func (s *Service) GetSession(st usersystem.SessionType, id string) (*usersystem.
 		}
 		return nil, err
 	}
-	return usersystem.NewSession().WithType(st).WithPayloads(payloads), nil
+	return usersystem.NewSession().WithType(st).WithPayloads(payloads).WithID(id), nil
 }
 
 func (s *Service) RevokeSession(st usersystem.SessionType, code string) (bool, error) {
@@ -83,6 +83,10 @@ func (s *Service) GetRequestSession(r *http.Request, st usersystem.SessionType) 
 	if err != nil {
 		return nil, err
 	}
+	token, err := ts.Token()
+	if err != nil {
+		return nil, err
+	}
 	payloads := authority.NewPayloads()
 	err = ts.Get(s.PayloadsField(), &payloads)
 	if err != nil {
@@ -91,7 +95,7 @@ func (s *Service) GetRequestSession(r *http.Request, st usersystem.SessionType) 
 		}
 		return nil, err
 	}
-	return usersystem.NewSession().WithType(st).WithPayloads(payloads), nil
+	return usersystem.NewSession().WithType(st).WithPayloads(payloads).WithID(token), nil
 
 }
 

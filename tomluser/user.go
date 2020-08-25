@@ -39,7 +39,7 @@ func (u *User) Clone() *User {
 	newuser.UID = u.UID
 	newuser.HashMode = u.HashMode
 	newuser.Salt = u.Salt
-	newuser.Accounts = make([]*user.Account, len(newuser.Accounts))
+	newuser.Accounts = make([]*user.Account, len(u.Accounts))
 	copy(newuser.Accounts, u.Accounts)
 	newuser.Banned = u.Banned
 	roles := make(role.Roles, len(*u.Roles))

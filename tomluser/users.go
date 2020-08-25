@@ -50,7 +50,7 @@ func (u *Users) UpdateProfile(id string, p *profile.Profile) error {
 	return u.save()
 }
 
-func (u *Users) getAllUsers() *Data {
+func (u *Users) GetAllUsers() *Data {
 	data := NewData()
 	data.Users = make([]*User, 0, len(u.uidmap))
 	for k := range u.uidmap {
@@ -59,7 +59,7 @@ func (u *Users) getAllUsers() *Data {
 	return data
 }
 func (u *Users) save() error {
-	return u.Source.Save(u.getAllUsers())
+	return u.Source.Save(u.GetAllUsers())
 }
 func (u *Users) LoadStatus(id string) (status.Status, error) {
 	u.locker.RLock()
