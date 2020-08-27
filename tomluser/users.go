@@ -188,7 +188,7 @@ func (u *Users) accountToUID(account *user.Account) (uid string, err error) {
 }
 
 //AccountToUID query uid by user account.
-//Return user id and any error if raised.
+//Return user id and anyidFactory error if raised.
 //Return empty string as userid if account not found.
 func (u *Users) AccountToUID(account *user.Account) (uid string, err error) {
 	u.locker.RLock()
