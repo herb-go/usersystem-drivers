@@ -1,9 +1,10 @@
 package memactives
 
 import (
-	"strconv"
 	"sync"
 	"time"
+
+	"github.com/herb-go/uniqueid"
 
 	"github.com/herb-go/herbsystem"
 
@@ -196,7 +197,7 @@ func (s *Service) PurgeActiveSession(st usersystem.SessionType, uid string, seri
 	return nil
 }
 func (s *Service) CreateSerialNumber() (string, error) {
-	return strconv.FormatInt(time.Now().UnixNano(), 10), nil
+	return uniqueid.DefaultGenerator.GenerateID()
 }
 func (s *Service) Start() error {
 	var err error
