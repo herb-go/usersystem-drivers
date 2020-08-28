@@ -72,7 +72,7 @@ func (s *Service) GetSession(st usersystem.SessionType, id string) (*usersystem.
 	return usersystem.NewSession().WithType(st).WithPayloads(payloads).WithID(id), nil
 }
 
-func (s *Service) RevokeSession(st usersystem.SessionType, code string) (bool, error) {
+func (s *Service) RevokeSession(code string) (bool, error) {
 	return s.Store.Driver.Delete(code)
 }
 func (s *Service) SessionMiddleware() func(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {

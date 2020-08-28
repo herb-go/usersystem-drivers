@@ -435,7 +435,7 @@ func TestCacheService(t *testing.T) {
 	resp.Body.Close()
 	sid = string(bs)
 
-	ok, err := hs.RevokeSession(hs.Type, sid)
+	ok, err := hs.RevokeSession(sid)
 	if !ok || err != nil {
 		t.Fatal(ok, err)
 	}

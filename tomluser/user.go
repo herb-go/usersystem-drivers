@@ -4,10 +4,12 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/herb-go/user/status"
+
 	"github.com/herb-go/user/profile"
 
-	"github.com/herb-go/user"
 	"github.com/herb-go/herbsecurity/authorize/role"
+	"github.com/herb-go/user"
 )
 
 var defaultUsersHashMode = "sha256"
@@ -34,6 +36,12 @@ type User struct {
 	Profiles *profile.Profile
 }
 
+func (u *User) Status() status.Status {
+	if u.Banned {
+		return status.StatusBanned
+	}
+	return status.StatusNormal
+}
 func (u *User) Clone() *User {
 	newuser := NewUser()
 	newuser.UID = u.UID
