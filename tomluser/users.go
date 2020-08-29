@@ -1,6 +1,7 @@
 package tomluser
 
 import (
+	"sort"
 	"sync"
 
 	"github.com/herb-go/herbsecurity/authorize/role"
@@ -112,6 +113,42 @@ func (u *Users) RemoveStatus(uid string) error {
 	u.removeUser(uid)
 	return u.save()
 
+}
+func (u *Users) getAfterLast(last string, users []string) []string {
+	sort.Strings(users)
+	if last == "" {
+		return users
+	}
+	for k := range users {
+		if users[k] > last {
+			return users[k:]
+		}
+	}
+	return []string{}
+}
+
+func (u *Users) ListUsersByStatus(last string, limit int, statuses ...status.Status) ([]string, bool, error) {
+	u.locker.RLock()
+	defer u.locker.RUnlock()
+	m := map[bool]bool{}
+	for k := range statuses {
+		ok, err := u.IsAvailable(statuses[k])
+		if err != nil {
+			return nil, false, nil
+		}
+		m[!ok] = true
+	}
+	users := []string{}
+	for k := range u.uidmap {
+		if m[u.uidmap[k].Banned] {
+			users = append(users, k)
+		}
+	}
+	result := u.getAfterLast(last, users)
+	if limit > 0 && limit < len(result) {
+		return result[:limit], false, nil
+	}
+	return result, true, nil
 }
 
 //VerifyPassword Verify user password.

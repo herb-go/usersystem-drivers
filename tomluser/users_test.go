@@ -8,11 +8,11 @@ import (
 	"path"
 	"testing"
 
-	"github.com/herb-go/user"
 	"github.com/herb-go/herbsecurity/authorize/role"
+	"github.com/herb-go/user"
 
-	"github.com/herb-go/user/status"
 	"github.com/herb-go/providers/herb/statictoml"
+	"github.com/herb-go/user/status"
 	"github.com/herb-go/usersystem"
 	"github.com/herb-go/usersystem-drivers/tomluser"
 	"github.com/herb-go/usersystem/services/useraccount"
@@ -326,6 +326,42 @@ func TestService(t *testing.T) {
 	err = usercreate.ExecRemove(s, uid)
 	if err != nil {
 		t.Fatal(err)
+	}
+	err = ustatus.UpdateStatus("test2", status.StatusNormal)
+	err = usercreate.ExecCreate(s, "test3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ustatus.UpdateStatus("test3", status.StatusNormal)
+	err = usercreate.ExecCreate(s, "test4")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ustatus.UpdateStatus("test4", status.StatusBanned)
+	err = usercreate.ExecCreate(s, "test5")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ustatus.UpdateStatus("test5", status.StatusBanned)
+	users, finish, err := ustatus.Service.ListUsersByStatus("", 0, status.StatusNormal, status.StatusBanned)
+	if len(users) != 4 || !finish || err != nil {
+		t.Fatal(users, finish, err)
+	}
+	users, finish, err = ustatus.Service.ListUsersByStatus("", 3, status.StatusNormal, status.StatusBanned)
+	if len(users) != 3 || finish || err != nil {
+		t.Fatal(users, finish, err)
+	}
+	users, finish, err = ustatus.Service.ListUsersByStatus("test3", 3, status.StatusNormal, status.StatusBanned)
+	if len(users) != 2 || !finish || err != nil {
+		t.Fatal(users, finish, err)
+	}
+	users, finish, err = ustatus.Service.ListUsersByStatus("test2", 1, status.StatusBanned)
+	if len(users) != 1 || finish || err != nil {
+		t.Fatal(users, finish, err)
+	}
+	users, finish, err = ustatus.Service.ListUsersByStatus("test2", 0, status.StatusBanned)
+	if len(users) != 2 || !finish || err != nil {
+		t.Fatal(users, finish, err)
 	}
 }
 
