@@ -343,25 +343,25 @@ func TestService(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = ustatus.UpdateStatus("test5", status.StatusBanned)
-	users, finish, err := ustatus.Service.ListUsersByStatus("", 0, status.StatusNormal, status.StatusBanned)
-	if len(users) != 4 || !finish || err != nil {
-		t.Fatal(users, finish, err)
+	users, err := ustatus.Service.ListUsersByStatus("", 0, status.StatusNormal, status.StatusBanned)
+	if len(users) != 4 || err != nil {
+		t.Fatal(users, err)
 	}
-	users, finish, err = ustatus.Service.ListUsersByStatus("", 3, status.StatusNormal, status.StatusBanned)
-	if len(users) != 3 || finish || err != nil {
-		t.Fatal(users, finish, err)
+	users, err = ustatus.Service.ListUsersByStatus("", 3, status.StatusNormal, status.StatusBanned)
+	if len(users) != 3 || err != nil {
+		t.Fatal(users, err)
 	}
-	users, finish, err = ustatus.Service.ListUsersByStatus("test3", 3, status.StatusNormal, status.StatusBanned)
-	if len(users) != 2 || !finish || err != nil {
-		t.Fatal(users, finish, err)
+	users, err = ustatus.Service.ListUsersByStatus("test3", 3, status.StatusNormal, status.StatusBanned)
+	if len(users) != 2 || err != nil {
+		t.Fatal(users, err)
 	}
-	users, finish, err = ustatus.Service.ListUsersByStatus("test2", 1, status.StatusBanned)
-	if len(users) != 1 || finish || err != nil {
-		t.Fatal(users, finish, err)
+	users, err = ustatus.Service.ListUsersByStatus("test2", 1, status.StatusBanned)
+	if len(users) != 1 || err != nil {
+		t.Fatal(users, err)
 	}
-	users, finish, err = ustatus.Service.ListUsersByStatus("test2", 0, status.StatusBanned)
-	if len(users) != 2 || !finish || err != nil {
-		t.Fatal(users, finish, err)
+	users, err = ustatus.Service.ListUsersByStatus("test2", 0, status.StatusBanned)
+	if len(users) != 2 || err != nil {
+		t.Fatal(users, err)
 	}
 }
 

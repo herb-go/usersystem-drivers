@@ -127,14 +127,14 @@ func (u *Users) getAfterLast(last string, users []string) []string {
 	return []string{}
 }
 
-func (u *Users) ListUsersByStatus(last string, limit int, statuses ...status.Status) ([]string, bool, error) {
+func (u *Users) ListUsersByStatus(last string, limit int, statuses ...status.Status) ([]string, error) {
 	u.locker.RLock()
 	defer u.locker.RUnlock()
 	m := map[bool]bool{}
 	for k := range statuses {
 		ok, err := u.IsAvailable(statuses[k])
 		if err != nil {
-			return nil, false, nil
+			return nil, nil
 		}
 		m[!ok] = true
 	}
@@ -146,9 +146,9 @@ func (u *Users) ListUsersByStatus(last string, limit int, statuses ...status.Sta
 	}
 	result := u.getAfterLast(last, users)
 	if limit > 0 && limit < len(result) {
-		return result[:limit], false, nil
+		return result[:limit], nil
 	}
-	return result, true, nil
+	return result, nil
 }
 
 //VerifyPassword Verify user password.
