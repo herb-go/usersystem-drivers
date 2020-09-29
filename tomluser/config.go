@@ -34,6 +34,7 @@ func NewData() *Data {
 
 type Config struct {
 	Source        statictoml.Source
+	Example       statictoml.Source
 	ProfileFields []string
 	ServePassword bool
 	ServeStatus   bool
@@ -48,6 +49,10 @@ func (c *Config) Load() (*Users, error) {
 	locker.Lock()
 	locker.Unlock()
 	source, err := c.Source.Abs()
+	if err != nil {
+		return nil, err
+	}
+	err = source.VerifyWithExample(c.Example)
 	if err != nil {
 		return nil, err
 	}
