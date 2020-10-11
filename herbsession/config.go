@@ -1,7 +1,7 @@
 package herbsession
 
 import (
-	"github.com/herb-go/session"
+	"github.com/herb-go/herbmodules/session"
 	"github.com/herb-go/usersystem"
 )
 

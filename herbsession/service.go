@@ -8,7 +8,7 @@ import (
 	"github.com/herb-go/usersystem/httpusersystem/services/websession"
 
 	"github.com/herb-go/herb/middleware"
-	"github.com/herb-go/session"
+	"github.com/herb-go/herbmodules/session"
 	"github.com/herb-go/usersystem"
 )
 
