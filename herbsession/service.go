@@ -78,18 +78,21 @@ func (s *Service) Execute(us *usersystem.UserSystem) error {
 func (s *Service) GetSession(st usersystem.SessionType, id string) (*usersystem.Session, error) {
 	session, err := s.Store.LoadSession(id)
 	if err != nil {
+		if err == herbdata.ErrNotFound {
+			return nil, nil
+		}
 		return nil, err
 	}
 	data, err := session.Get(s.payloadsField())
 	if err != nil {
+		if err == herbdata.ErrNotFound {
+			return nil, nil
+		}
 		return nil, err
 	}
 	payloads := authority.NewPayloads()
 	err = msgpack.Unmarshal(data, &payloads)
 	if err != nil {
-		if err == herbdata.ErrNotFound {
-			return nil, nil
-		}
 		return nil, err
 	}
 	return usersystem.NewSession().WithType(st).WithPayloads(payloads).WithID(id), nil
@@ -113,6 +116,9 @@ func (s *Service) GetRequestSession(r *http.Request, st usersystem.SessionType) 
 		return nil, err
 	}
 	err = msgpack.Unmarshal(data, &payloads)
+	if err != nil {
+		return nil, err
+	}
 	return usersystem.NewSession().WithType(st).WithPayloads(payloads).WithID(token), nil
 
 }

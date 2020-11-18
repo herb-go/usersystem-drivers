@@ -1,35 +1,57 @@
 package herbsession_test
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"testing"
 
-	_ "github.com/herb-go/deprecated/cache/drivers/syncmapcache"
-	_ "github.com/herb-go/deprecated/cache/marshalers/msgpackmarshaler"
-	"github.com/herb-go/deprecated/session"
 	"github.com/herb-go/herb/middleware"
+	"github.com/herb-go/herb/service/httpservice/httpcookie"
+	_ "github.com/herb-go/herbdata-drivers/kvdb-drivers/freecachedb"
+	"github.com/herb-go/herbdata/kvdb"
+	"github.com/herb-go/herbmodules/httpsession"
 	"github.com/herb-go/usersystem"
 	"github.com/herb-go/usersystem-drivers/herbsession"
 	"github.com/herb-go/usersystem/httpusersystem/services/websession"
 )
 
 func testClientConfig() *herbsession.Config {
-	config := &session.StoreConfig{}
-	config.DriverName = session.DriverNameClientStore
-	config.ClientStoreKey = "test"
-	config.TokenLifetime = "1h"
-	config.TokenMaxLifetime = "168h"
-	config.TokenContextName = "token"
-	config.CookieName = "cookiename"
-	config.CookiePath = "/"
-	config.CookieSecure = false
-	config.UpdateActiveIntervalInSecond = 100
+
+	config := &httpsession.Config{
+		AutoStart:          true,
+		MaxLifetime:        3600 * 168,
+		Timeout:            3600,
+		LastActiveInterval: 100,
+	}
+	config.Engine = httpsession.EngineConfig{
+		Name: httpsession.EngineNameAES,
+		Config: func(v interface{}) error {
+			config := v.(*httpsession.AESEngine)
+			*config = httpsession.AESEngine{
+				Secret: []byte("SECRET"),
+			}
+			return nil
+		},
+	}
+	config.Installer = &httpsession.InstallerConfig{
+		Name: httpsession.InstallerNameCookie,
+		Config: func(v interface{}) error {
+			config := v.(*httpsession.Cookie)
+			*config = httpsession.Cookie{
+				Config: httpcookie.Config{
+					Name: "cookiename",
+					Path: "/",
+				},
+			}
+			return nil
+		},
+	}
 	return &herbsession.Config{
-		Prefix:      "",
-		StoreConfig: config,
+		Prefix: "",
+		Config: config,
 	}
 }
 func TestClientService(t *testing.T) {
@@ -42,7 +64,7 @@ func TestClientService(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if hs.Service.(*herbsession.Service).Prefix != "test" {
+	if string(hs.Service.(*herbsession.Service).Prefix) != "test" {
 		t.Fatal()
 	}
 	s.Start()
@@ -120,7 +142,7 @@ func TestClientService(t *testing.T) {
 	}
 	resp.Body.Close()
 	sid := string(bs)
-	session, err := hs.GetSession(hs.Type, sid)
+	session, err := hs.GetSession(sid)
 	if err != nil {
 		t.Fatal(err, sid)
 	}
@@ -210,7 +232,7 @@ func TestClientService(t *testing.T) {
 	if uid != "" {
 		t.Fatal(uid)
 	}
-	session, err = hs.GetSession(hs.Type, "notexist")
+	session, err = hs.GetSession("notexist")
 	if err != nil {
 		t.Fatal(err, sid)
 	}
@@ -220,22 +242,45 @@ func TestClientService(t *testing.T) {
 }
 
 func testCacheConfig() *herbsession.Config {
-	config := &session.StoreConfig{}
-	config.DriverName = session.DriverNameCacheStore
-	config.Cache.Driver = "syncmapcache"
-	config.Cache.TTL = 3600
-	config.TokenLifetime = "1h"
-	config.TokenMaxLifetime = "168h"
-	config.TokenContextName = "token"
-	config.CookieName = "cookiename"
-	config.CookiePath = "/"
-	config.CookieSecure = false
-	config.UpdateActiveIntervalInSecond = 100
-	config.TokenLength = 32
-	config.TokenPrefixMode = session.PrefixModeRaw
+
+	config := &httpsession.Config{
+		AutoStart:          true,
+		MaxLifetime:        3600 * 168,
+		Timeout:            3600,
+		LastActiveInterval: 100,
+	}
+	config.Engine = httpsession.EngineConfig{
+		Name: httpsession.EngineNameKV,
+		Config: func(v interface{}) error {
+			config := v.(*httpsession.KVEngineConfig)
+			*config = httpsession.KVEngineConfig{
+				Config: kvdb.Config{
+					Driver: "freecache",
+					Config: func(v interface{}) error {
+						return json.Unmarshal([]byte(`{"Size":50000}`), v)
+					},
+				},
+				TokenSize: 32,
+			}
+			return nil
+		},
+	}
+	config.Installer = &httpsession.InstallerConfig{
+		Name: httpsession.InstallerNameCookie,
+		Config: func(v interface{}) error {
+			config := v.(*httpsession.Cookie)
+			*config = httpsession.Cookie{
+				Config: httpcookie.Config{
+					Name: "cookiename",
+					Path: "/",
+				},
+			}
+			return nil
+		},
+	}
 	return &herbsession.Config{
-		Prefix:      "",
-		StoreConfig: config,
+		Prefix: "",
+		Config: config,
 	}
 }
 func TestCacheService(t *testing.T) {
@@ -249,7 +294,7 @@ func TestCacheService(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if hs.Service.(*herbsession.Service).Prefix != "test" {
+	if string(hs.Service.(*herbsession.Service).Prefix) != "test" {
 		t.Fatal()
 	}
 	s.Start()
@@ -327,7 +372,7 @@ func TestCacheService(t *testing.T) {
 	}
 	resp.Body.Close()
 	sid := string(bs)
-	session, err := hs.GetSession(hs.Type, sid)
+	session, err := hs.GetSession(sid)
 	if err != nil {
 		t.Fatal(err, sid)
 	}
@@ -417,7 +462,7 @@ func TestCacheService(t *testing.T) {
 	if uid != "" {
 		t.Fatal(uid)
 	}
-	session, err = hs.GetSession(hs.Type, "notexist")
+	session, err = hs.GetSession("notexist")
 	if err != nil {
 		t.Fatal(err, sid)
 	}
@@ -439,7 +484,7 @@ func TestCacheService(t *testing.T) {
 	if !ok || err != nil {
 		t.Fatal(ok, err)
 	}
-	session, err = hs.GetSession(hs.Type, sid)
+	session, err = hs.GetSession(sid)
 	if err != nil {
 		t.Fatal(err, sid)
 	}
