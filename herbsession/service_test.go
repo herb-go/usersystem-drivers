@@ -9,8 +9,8 @@ import (
 
 	_ "github.com/herb-go/deprecated/cache/drivers/syncmapcache"
 	_ "github.com/herb-go/deprecated/cache/marshalers/msgpackmarshaler"
-	"github.com/herb-go/herb/middleware"
 	"github.com/herb-go/deprecated/session"
+	"github.com/herb-go/herb/middleware"
 	"github.com/herb-go/usersystem"
 	"github.com/herb-go/usersystem-drivers/herbsession"
 	"github.com/herb-go/usersystem/httpusersystem/services/websession"

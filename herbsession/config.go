@@ -1,20 +1,20 @@
 package herbsession
 
 import (
-	"github.com/herb-go/deprecated/session"
+	"github.com/herb-go/herbmodules/httpsession"
 	"github.com/herb-go/usersystem"
 )
 
 type Config struct {
 	Prefix string
-	*session.StoreConfig
+	*httpsession.Config
 }
 
 func (c *Config) CreateService() (*Service, error) {
 	s := NewService()
-	s.Prefix = c.Prefix
-	store := session.New()
-	err := c.StoreConfig.ApplyTo(store)
+	s.Prefix = []byte(c.Prefix)
+	store := httpsession.New()
+	err := c.Config.ApplyTo(store)
 	if err != nil {
 		return nil, err
 	}
