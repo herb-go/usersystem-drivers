@@ -11,7 +11,6 @@ import (
 	"github.com/herb-go/herb/middleware"
 	"github.com/herb-go/herb/service/httpservice/httpcookie"
 	_ "github.com/herb-go/herbdata-drivers/kvdb-drivers/freecachedb"
-	"github.com/herb-go/herbdata/kvdb"
 	"github.com/herb-go/herbmodules/httpsession"
 	"github.com/herb-go/usersystem"
 	"github.com/herb-go/usersystem-drivers/herbsession"
@@ -26,28 +25,25 @@ func testClientConfig() *herbsession.Config {
 		Timeout:            3600,
 		LastActiveInterval: 100,
 	}
-	config.Engine = httpsession.EngineConfig{
-		Name: httpsession.EngineNameAES,
-		Config: func(v interface{}) error {
-			config := v.(*httpsession.AESEngine)
-			*config = httpsession.AESEngine{
-				Secret: []byte("SECRET"),
-			}
-			return nil
-		},
+	config.Engine = httpsession.EngineNameAES
+
+	config.EngineConfig = func(v interface{}) error {
+		config := v.(*httpsession.AESEngineConfig)
+		*config = httpsession.AESEngineConfig{
+			Secret: "SECRET",
+		}
+		return nil
 	}
-	config.Installer = &httpsession.InstallerConfig{
-		Name: httpsession.InstallerNameCookie,
-		Config: func(v interface{}) error {
-			config := v.(*httpsession.Cookie)
-			*config = httpsession.Cookie{
-				Config: httpcookie.Config{
-					Name: "cookiename",
-					Path: "/",
-				},
-			}
-			return nil
-		},
+	config.Installer = httpsession.InstallerNameCookie
+	config.InstallerConfig = func(v interface{}) error {
+		config := v.(*httpsession.Cookie)
+		*config = httpsession.Cookie{
+			Config: httpcookie.Config{
+				Name: "cookiename",
+				Path: "/",
+			},
+		}
+		return nil
 	}
 	return &herbsession.Config{
 		Prefix: "",
@@ -249,34 +245,28 @@ func testCacheConfig() *herbsession.Config {
 		Timeout:            3600,
 		LastActiveInterval: 100,
 	}
-	config.Engine = httpsession.EngineConfig{
-		Name: httpsession.EngineNameKV,
-		Config: func(v interface{}) error {
-			config := v.(*httpsession.KVEngineConfig)
-			*config = httpsession.KVEngineConfig{
-				Config: kvdb.Config{
-					Driver: "freecache",
-					Config: func(v interface{}) error {
-						return json.Unmarshal([]byte(`{"Size":50000}`), v)
-					},
-				},
-				TokenSize: 32,
-			}
-			return nil
-		},
+	config.Engine = httpsession.EngineNameKV
+	config.EngineConfig = func(v interface{}) error {
+		config := v.(*httpsession.KVEngineConfig)
+		*config = httpsession.KVEngineConfig{
+			DBDriver: "freecache",
+			DBConfig: func(v interface{}) error {
+				return json.Unmarshal([]byte(`{"Size":50000}`), v)
+			},
+			TokenSize: 32,
+		}
+		return nil
 	}
-	config.Installer = &httpsession.InstallerConfig{
-		Name: httpsession.InstallerNameCookie,
-		Config: func(v interface{}) error {
-			config := v.(*httpsession.Cookie)
-			*config = httpsession.Cookie{
-				Config: httpcookie.Config{
-					Name: "cookiename",
-					Path: "/",
-				},
-			}
-			return nil
-		},
+	config.Installer = httpsession.InstallerNameCookie
+	config.InstallerConfig = func(v interface{}) error {
+		config := v.(*httpsession.Cookie)
+		*config = httpsession.Cookie{
+			Config: httpcookie.Config{
+				Name: "cookiename",
+				Path: "/",
+			},
+		}
+		return nil
 	}
 	return &herbsession.Config{
 		Prefix: "",

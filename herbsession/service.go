@@ -129,6 +129,7 @@ func (s *Service) LoginRequestSession(r *http.Request, payloads *authority.Paylo
 	session := s.Store.RequestSession(r)
 	data, err = msgpack.Marshal(payloads)
 	if s.Store.Engine.DynamicToken() {
+		err = session.Set(s.payloadsField(), data)
 		if err != nil {
 			return nil, err
 		}
