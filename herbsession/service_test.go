@@ -143,7 +143,7 @@ func TestClientService(t *testing.T) {
 		t.Fatal(err, sid)
 	}
 	if session == nil || session.Type != websession.SessionType {
-		t.Fatal()
+		t.Fatal(session)
 	}
 	uid := session.UID()
 	if uid != "testuid" {
@@ -237,7 +237,7 @@ func TestClientService(t *testing.T) {
 	}
 }
 
-func testCacheConfig() *herbsession.Config {
+func testKeyValueConfig() *herbsession.Config {
 
 	config := &httpsession.Config{
 		DisableAutoStart:   false,
@@ -273,14 +273,14 @@ func testCacheConfig() *herbsession.Config {
 		Config: config,
 	}
 }
-func TestCacheService(t *testing.T) {
+func TestKeyValueService(t *testing.T) {
 	var err error
 	s := usersystem.New().WithKeyword("test")
 
 	hs := websession.MustNewAndInstallTo(s)
 	s.Ready()
 	s.Configuring()
-	err = testCacheConfig().Execute(s)
+	err = testKeyValueConfig().Execute(s)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -136,6 +136,12 @@ func (s *Service) LoginRequestSession(r *http.Request, payloads *authority.Paylo
 	if err != nil {
 		return nil, err
 	}
+	if s.Store.Engine.DynamicToken() {
+		err = s.Store.SaveSession(session)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return usersystem.NewSession().WithID(session.Token()).WithPayloads(payloads.Clone()), nil
 }
 func (s *Service) LogoutRequestSession(r *http.Request) (bool, error) {
