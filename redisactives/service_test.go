@@ -1,31 +1,44 @@
-package memactives
+package redisactives
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
+	"github.com/herb-go/datasource/redis/redispool"
 	"github.com/herb-go/usersystem"
 	"github.com/herb-go/usersystem/services/activesessions"
 	"github.com/herb-go/usersystem/usersession"
 )
 
-var testDuration = time.Millisecond
-
-func testConfig() *Config {
-	return &Config{
-		Durations: map[string]string{
-			"test": testDuration.String(),
-		},
+func newTestConfig() *Config {
+	tc := &Config{}
+	err := json.Unmarshal([]byte(testConfig), tc)
+	if err != nil {
+		panic(err)
 	}
+	p := redispool.New()
+	err = tc.ApplyTo(p)
+	if err != nil {
+		panic(err)
+	}
+	conn := p.Open().Get()
+	defer conn.Close()
+	_, err = conn.Do("flushdb")
+	if err != nil {
+		panic(err)
+	}
+	return tc
 }
-
 func TestService(t *testing.T) {
 	var err error
+	var testDuration = 2 * time.Second
 	s := usersystem.New().WithKeyword("test")
 	as := activesessions.MustNewAndInstallTo(s)
 	s.Ready()
 	s.Configuring()
-	err = testConfig().Execute(s)
+	tc := newTestConfig()
+	err = tc.Execute(s)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,8 +84,6 @@ func TestService(t *testing.T) {
 	if err != nil || len(a) != 0 {
 		t.Fatal(len(a), err)
 	}
-	service := as.Service.(*Service)
-	service.Stores["test"].Update()
 	time.Sleep(2 * testDuration)
 	a, err = as.GetActiveSessions("test", "testuid")
 	if err != nil || len(a) != 0 {

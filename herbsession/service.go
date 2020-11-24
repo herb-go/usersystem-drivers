@@ -127,24 +127,14 @@ func (s *Service) LoginRequestSession(r *http.Request, payloads *authority.Paylo
 	var err error
 	var data []byte
 	session := s.Store.RequestSession(r)
-	data, err = msgpack.Marshal(payloads)
-	if s.Store.Engine.DynamicToken() {
-		err = session.Set(s.payloadsField(), data)
-		if err != nil {
-			return nil, err
-		}
-		err = s.Store.SaveSession(session)
-		if err != nil {
-			return nil, err
-		}
-
-	} else {
+	if !s.Store.Engine.DynamicToken() {
 		payloads.Set(usersystem.PayloadRevokeCode, []byte(session.Token()))
+	}
+	data, err = msgpack.Marshal(payloads)
 
-		err = session.Set(s.payloadsField(), data)
-		if err != nil {
-			return nil, err
-		}
+	err = session.Set(s.payloadsField(), data)
+	if err != nil {
+		return nil, err
 	}
 	return usersystem.NewSession().WithID(session.Token()).WithPayloads(payloads.Clone()), nil
 }

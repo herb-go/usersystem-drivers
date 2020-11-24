@@ -20,7 +20,7 @@ import (
 func testClientConfig() *herbsession.Config {
 
 	config := &httpsession.Config{
-		AutoStart:          true,
+		DisableAutoStart:   false,
 		MaxLifetime:        3600 * 168,
 		Timeout:            3600,
 		LastActiveInterval: 100,
@@ -240,7 +240,7 @@ func TestClientService(t *testing.T) {
 func testCacheConfig() *herbsession.Config {
 
 	config := &httpsession.Config{
-		AutoStart:          true,
+		DisableAutoStart:   false,
 		MaxLifetime:        3600 * 168,
 		Timeout:            3600,
 		LastActiveInterval: 100,

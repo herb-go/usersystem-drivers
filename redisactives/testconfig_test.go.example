@@ -1,0 +1,17 @@
+package redisactives
+
+var testConfig = `{
+            "Durations":{
+                "test":"2s"
+            },
+            "Network": "tcp",
+            "Address": "127.0.0.1:6379",
+            "Password": "13512138898",
+            "Db": 1,
+            "ConnectTimeoutInSecond": 60,
+            "ReadTimeoutInSecond": 60,
+            "WriteTimeoutInSecond": 60,
+            "MaxIdle": 100,
+            "MaxAlive": 200,
+            "IdleTimeoutInSecond": 60
+        }`
