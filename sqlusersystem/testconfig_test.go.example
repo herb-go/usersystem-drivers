@@ -1,0 +1,12 @@
+package sqlusersystem
+
+import (
+	"github.com/herb-go/datasource/sql/db"
+	_ "github.com/herb-go/datasource/sql/querybuilder/drivers/mysql" //mysql driver
+)
+
+var config = db.Config{
+	Driver: "mysql",
+	Conn:   "dbuser:password@host/dbname",
+	Prefix: "",
+}

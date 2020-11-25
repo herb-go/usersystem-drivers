@@ -202,7 +202,7 @@ func (u *Users) SetRoles(uid string, r *role.Roles) error {
 	us.Roles = r
 	return nil
 }
-func (u *Users) Account(uid string) (*user.Accounts, error) {
+func (u *Users) Accounts(uid string) (*user.Accounts, error) {
 	u.locker.RLock()
 	defer u.locker.RUnlock()
 	us := u.uidmap[uid]

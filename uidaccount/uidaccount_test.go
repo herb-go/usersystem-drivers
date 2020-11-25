@@ -37,7 +37,7 @@ func TestUIDAccount(t *testing.T) {
 	}
 	s.Start()
 	defer s.Stop()
-	accounts, err := ua.Account("test")
+	accounts, err := ua.Accounts("test")
 	if err != nil {
 		panic(err)
 	}

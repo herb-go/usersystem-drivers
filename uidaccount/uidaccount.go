@@ -38,8 +38,8 @@ func (u *UIDAccount) uidToAccount(uid string) string {
 	return u.Prefix + uid + u.Suffix
 }
 
-//Account return account of give uid.
-func (u *UIDAccount) Account(uid string) (*user.Accounts, error) {
+//Accounts return account of give uid.
+func (u *UIDAccount) Accounts(uid string) (*user.Accounts, error) {
 	account := user.NewAccount()
 	account.Keyword = u.AccountKeyword
 	account.Account = u.uidToAccount(uid)
