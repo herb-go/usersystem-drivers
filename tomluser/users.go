@@ -114,8 +114,12 @@ func (u *Users) RemoveStatus(uid string) error {
 	return u.save()
 
 }
-func (u *Users) getAfterLast(last string, users []string) []string {
-	sort.Strings(users)
+func (u *Users) getAfterLast(last string, users []string, reverse bool) []string {
+	if reverse {
+		sort.Sort(sort.Reverse(sort.StringSlice(users)))
+	} else {
+		sort.Strings(users)
+	}
 	if last == "" {
 		return users
 	}
@@ -127,7 +131,7 @@ func (u *Users) getAfterLast(last string, users []string) []string {
 	return []string{}
 }
 
-func (u *Users) ListUsersByStatus(last string, limit int, statuses ...status.Status) ([]string, error) {
+func (u *Users) ListUsersByStatus(last string, limit int, reverse bool, statuses ...status.Status) ([]string, error) {
 	u.locker.RLock()
 	defer u.locker.RUnlock()
 	m := map[bool]bool{}
@@ -144,7 +148,7 @@ func (u *Users) ListUsersByStatus(last string, limit int, statuses ...status.Sta
 			users = append(users, k)
 		}
 	}
-	result := u.getAfterLast(last, users)
+	result := u.getAfterLast(last, users, reverse)
 	if limit > 0 && limit < len(result) {
 		return result[:limit], nil
 	}

@@ -711,18 +711,25 @@ func (u *UserMapper) RemoveStatus(uid string) error {
 	}
 	return nil
 }
-func (u *UserMapper) ListUsersByStatus(last string, limit int, statuses ...status.Status) ([]string, error) {
+func (u *UserMapper) ListUsersByStatus(last string, limit int, reverse bool, statuses ...status.Status) ([]string, error) {
 	query := u.User.QueryBuilder
 	Select := query.NewSelectQuery()
 	Select.Select.Add("user.uid")
 	Select.From.AddAlias("user", u.TableName())
-	Select.Where.Condition = query.New("user.uid > ?", last)
+	if last != "" {
+		if reverse {
+			Select.Where.Condition = query.New("user.uid < ?", last)
+		} else {
+			Select.Where.Condition = query.New("user.uid > ?", last)
+		}
+	}
 	if len(statuses) > 0 {
 		Select.Where.Condition = Select.Where.Condition.And(query.In("user.status", statuses))
 	}
 	if limit != 0 {
 		Select.Limit.Limit = &limit
 	}
+	Select.OrderBy.Add("user.uid", !reverse)
 	rows, err := Select.QueryRows(u.DB())
 	if err != nil {
 		return nil, err
