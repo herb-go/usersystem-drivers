@@ -3,6 +3,7 @@ package userconfig
 import (
 	"github.com/herb-go/usersystem"
 	"github.com/herb-go/usersystem-drivers/overseers/usersystemdirectivefactoryoverseer"
+	"github.com/herb-go/worker"
 )
 
 type Directive struct {
@@ -12,6 +13,9 @@ type Directive struct {
 
 func (d *Directive) ApplyTo(s *usersystem.UserSystem) error {
 	f := usersystemdirectivefactoryoverseer.GetUserSystemDirectiveFactoryByID(d.ID)
+	if f == nil {
+		return worker.NewWorkerNotFounderError(d.ID)
+	}
 	directive, err := f(d.Config)
 	if err != nil {
 		return err
