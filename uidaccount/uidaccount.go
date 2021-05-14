@@ -108,10 +108,8 @@ func (u *UIDAccount) Stop() error {
 
 //Execute apply uidaccount directive to usersystem
 func (u *UIDAccount) Execute(s *usersystem.UserSystem) error {
-	ua, err := useraccount.GetService(s)
-	if err != nil {
-		return err
-	}
+	ua := useraccount.MustGetModule(s)
+
 	if ua == nil {
 		return nil
 	}

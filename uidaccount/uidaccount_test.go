@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/herb-go/herbsystem"
 	"github.com/herb-go/usersystem/modules/useraccount"
 
 	"github.com/herb-go/user"
@@ -25,8 +26,8 @@ func TestUIDAccount(t *testing.T) {
 
 	s := usersystem.New()
 	ua := useraccount.MustNewAndInstallTo(s)
-	s.Ready()
-	s.Configuring()
+	herbsystem.MustReady(s)
+	herbsystem.MustConfigure(s)
 	d, err := DirectiveFactory(loader.Decode)
 	if err != nil {
 		panic(err)
@@ -35,8 +36,8 @@ func TestUIDAccount(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	s.Start()
-	defer s.Stop()
+	herbsystem.MustStart(s)
+	defer herbsystem.MustStop(s)
 	accounts, err := ua.Accounts("test")
 	if err != nil {
 		panic(err)
