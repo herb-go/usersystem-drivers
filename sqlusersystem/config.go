@@ -5,10 +5,10 @@ import (
 	"github.com/herb-go/datasource/sql/querybuilder"
 	"github.com/herb-go/uniqueid"
 	"github.com/herb-go/usersystem"
-	"github.com/herb-go/usersystem/services/useraccount"
-	"github.com/herb-go/usersystem/services/userpassword"
-	"github.com/herb-go/usersystem/services/userstatus"
-	"github.com/herb-go/usersystem/services/userterm"
+	"github.com/herb-go/usersystem/modules/useraccount"
+	"github.com/herb-go/usersystem/modules/userpassword"
+	"github.com/herb-go/usersystem/modules/userstatus"
+	"github.com/herb-go/usersystem/modules/userterm"
 )
 
 type Config struct {
@@ -47,37 +47,25 @@ func (c *Config) Execute(s *usersystem.UserSystem) error {
 		return err
 	}
 	if c.TableUser != "" {
-		ss, err := userstatus.GetService(s)
-		if err != nil {
-			return err
-		}
+		ss := userstatus.MustGetModule(s)
 		if ss != nil {
 			ss.Service = u.User()
 		}
 	}
 	if c.TableAccount != "" {
-		ua, err := useraccount.GetService(s)
-		if err != nil {
-			return err
-		}
+		ua := useraccount.MustGetModule(s)
 		if ua != nil {
 			ua.Service = u.Account()
 		}
 	}
 	if c.TablePassword != "" {
-		up, err := userpassword.GetService(s)
-		if err != nil {
-			return err
-		}
+		up := userpassword.MustGetModule(s)
 		if up != nil {
 			up.Service = u.Password()
 		}
 	}
 	if c.TableToken != "" {
-		ut, err := userterm.GetService(s)
-		if err != nil {
-			return err
-		}
+		ut := userterm.MustGetModule(s)
 		if ut != nil {
 			ut.Service = u.Token()
 		}

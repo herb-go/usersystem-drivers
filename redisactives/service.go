@@ -9,7 +9,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/herb-go/uniqueid"
 	"github.com/herb-go/usersystem"
-	"github.com/herb-go/usersystem/services/activesessions"
+	"github.com/herb-go/usersystem/modules/activesessions"
 )
 
 type Service struct {
@@ -19,32 +19,35 @@ type Service struct {
 	Interval int64
 }
 
-func (s *Service) Config(st usersystem.SessionType) (*activesessions.Config, error) {
+func (s *Service) MustConfig(st usersystem.SessionType) *activesessions.Config {
 	if s.configs[st] == nil {
 		return &activesessions.Config{
 			Supported: false,
-		}, nil
+		}
 	}
-	return s.configs[st], nil
+	return s.configs[st]
 }
-func (s *Service) OnSessionActive(session *usersystem.Session) error {
+func (s *Service) MustOnSessionActive(session *usersystem.Session) {
 	if session == nil {
-		return nil
+		return
 	}
 	config, ok := s.configs[session.Type]
 	if !ok {
-		return nil
+		return
 	}
 	sn := session.Payloads.LoadString(activesessions.PayloadSerialNumber)
 	if sn == "" {
-		return nil
+		return
 	}
 	duration := config.Duration
 	uid := session.UID()
 	now := time.Now().Unix()
 	key := s.sessionkey(session.Type, uid, now, duration, false)
 	sessionid := session.ID
-	return s.activeEntry(key, sn, sessionid, now, duration)
+	err := s.activeEntry(key, sn, sessionid, now, duration)
+	if err != nil {
+		panic(err)
+	}
 }
 func (s *Service) sessionkey(st usersystem.SessionType, uid string, now int64, duration time.Duration, prev bool) []byte {
 	return datautil.Join(nil, []byte(s.Prefix), []byte(st), []byte(uid), timekey(now, s.configs[st].Duration, prev))
@@ -117,9 +120,9 @@ func (s *Service) unmarshalEntries(data [][]byte, err error) ([]*entry, error) {
 	}
 	return entrylist, nil
 }
-func (s *Service) GetActiveSessions(st usersystem.SessionType, uid string) ([]*activesessions.Active, error) {
+func (s *Service) MustGetActiveSessions(st usersystem.SessionType, uid string) []*activesessions.Active {
 	if uid == "" || s.configs[st] == nil {
-		return nil, nil
+		return nil
 	}
 	conn := s.Pool.Get()
 	defer conn.Close()
@@ -130,11 +133,11 @@ func (s *Service) GetActiveSessions(st usersystem.SessionType, uid string) ([]*a
 	keyprev := s.sessionkey(st, uid, now, duration, true)
 	resultnow, err := s.unmarshalEntries(redis.ByteSlices(conn.Do("HVALS", key)))
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	resultprev, err := s.unmarshalEntries(redis.ByteSlices(conn.Do("HVALS", keyprev)))
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	var result = []*activesessions.Active{}
 	for _, v := range resultnow {
@@ -149,12 +152,12 @@ func (s *Service) GetActiveSessions(st usersystem.SessionType, uid string) ([]*a
 			result = append(result, v.Convert())
 		}
 	}
-	return result, nil
+	return result
 }
 
-func (s *Service) PurgeActiveSession(st usersystem.SessionType, uid string, serialnumber string) error {
+func (s *Service) MustPurgeActiveSession(st usersystem.SessionType, uid string, serialnumber string) {
 	if uid == "" || s.configs[st] == nil || serialnumber == "" {
-		return nil
+		return
 	}
 	conn := s.Pool.Get()
 	defer conn.Close()
@@ -164,13 +167,15 @@ func (s *Service) PurgeActiveSession(st usersystem.SessionType, uid string, seri
 	keyprev := s.sessionkey(st, uid, now, duration, true)
 	_, err := conn.Do("HDEL", key, serialnumber)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	_, err = conn.Do("HDEL", keyprev, serialnumber)
-	return err
+	if err != nil {
+		panic(err)
+	}
 }
-func (s *Service) CreateSerialNumber() (string, error) {
-	return uniqueid.DefaultGenerator.GenerateID()
+func (s *Service) MustCreateSerialNumber() string {
+	return uniqueid.DefaultGenerator.MustGenerateID()
 }
 func (s *Service) Start() error {
 	return nil
@@ -179,10 +184,7 @@ func (s *Service) Stop() error {
 	return nil
 }
 func (s *Service) Execute(us *usersystem.UserSystem) error {
-	as, err := activesessions.GetService(us)
-	if err != nil {
-		return err
-	}
+	as := activesessions.MustGetModule(us)
 	if as == nil {
 		return nil
 	}

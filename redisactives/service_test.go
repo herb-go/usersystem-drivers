@@ -6,8 +6,9 @@ import (
 	"time"
 
 	"github.com/herb-go/datasource/redis/redispool"
+	"github.com/herb-go/herbsystem"
 	"github.com/herb-go/usersystem"
-	"github.com/herb-go/usersystem/services/activesessions"
+	"github.com/herb-go/usersystem/modules/activesessions"
 	"github.com/herb-go/usersystem/usersession"
 )
 
@@ -35,83 +36,62 @@ func TestService(t *testing.T) {
 	var testDuration = 2 * time.Second
 	s := usersystem.New().WithKeyword("test")
 	as := activesessions.MustNewAndInstallTo(s)
-	s.Ready()
-	s.Configuring()
+	herbsystem.MustReady(s)
+	herbsystem.MustConfigure(s)
 	tc := newTestConfig()
 	err = tc.Execute(s)
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.Start()
-	defer s.Stop()
-	err = as.OnSessionActive(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	herbsystem.MustStart(s)
+	defer herbsystem.MustStop(s)
+	as.MustOnSessionActive(nil)
+
 	session := usersystem.NewSession()
-	err = as.OnSessionActive(session)
-	if err != nil {
-		t.Fatal(err)
-	}
+	as.MustOnSessionActive(session)
+
 	session.WithType("test")
-	err = as.OnSessionActive(session)
-	if err != nil {
-		t.Fatal(err)
+	as.MustOnSessionActive(session)
+
+	c := as.MustConfig("notexist")
+	if c == nil || c.Supported != false {
+		t.Fatal(c)
 	}
-	c, err := as.Config("notexist")
-	if c == nil || c.Supported != false || err != nil {
-		t.Fatal(c, err)
-	}
-	c, err = as.Config("test")
-	if c == nil || c.Supported != true || c.Duration != testDuration || err != nil {
-		t.Fatal(c, err)
+	c = as.MustConfig("test")
+	if c == nil || c.Supported != true || c.Duration != testDuration {
+		t.Fatal(c)
 	}
 
-	p, err := usersession.ExecInitPayloads(s, s.Context, "test", "testuid")
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := usersession.MustExecInitPayloads(s, s.SystemContext(), "test", "testuid")
+
 	session.WithPayloads(p).WithID("testid").WithType("test")
-	err = usersession.ExecOnSessionActive(s, session)
-	if err != nil {
-		t.Fatal(err)
+	usersession.MustExecOnSessionActive(s, session)
+
+	a := as.MustGetActiveSessions("test", "testuid")
+	if len(a) != 1 || a[0].SessionID != "testid" {
+		t.Fatal(len(a))
 	}
-	a, err := as.GetActiveSessions("test", "testuid")
-	if err != nil || len(a) != 1 || a[0].SessionID != "testid" {
-		t.Fatal(len(a), err)
-	}
-	a, err = as.GetActiveSessions("notexist", "testuid")
-	if err != nil || len(a) != 0 {
-		t.Fatal(len(a), err)
+	a = as.MustGetActiveSessions("notexist", "testuid")
+	if len(a) != 0 {
+		t.Fatal(len(a))
 	}
 	time.Sleep(2 * testDuration)
-	a, err = as.GetActiveSessions("test", "testuid")
-	if err != nil || len(a) != 0 {
-		t.Fatal(len(a), err)
+	a = as.MustGetActiveSessions("test", "testuid")
+	if len(a) != 0 {
+		t.Fatal(len(a))
 	}
-	err = usersession.ExecOnSessionActive(s, session)
-	if err != nil {
-		t.Fatal(err)
-	}
-	a, err = as.GetActiveSessions("test", "testuid")
-	if err != nil || len(a) != 1 || a[0].SessionID != "testid" {
-		t.Fatal(len(a), err)
-	}
-	err = as.PurgeActiveSession(session)
-	if err != nil {
-		t.Fatal()
-	}
-	err = as.PurgeActiveSession(session)
-	if err != nil {
-		t.Fatal()
-	}
-	err = as.PurgeActiveSession(nil)
-	if err != nil {
-		t.Fatal()
-	}
+	usersession.MustExecOnSessionActive(s, session)
 
-	a, err = as.GetActiveSessions("test", "testuid")
-	if err != nil || len(a) != 0 {
+	a = as.MustGetActiveSessions("test", "testuid")
+	if len(a) != 1 || a[0].SessionID != "testid" {
 		t.Fatal(len(a), err)
+	}
+	as.MustPurgeActiveSession(session)
+	as.MustPurgeActiveSession(session)
+	as.MustPurgeActiveSession(nil)
+
+	a = as.MustGetActiveSessions("test", "testuid")
+	if len(a) != 0 {
+		t.Fatal(len(a))
 	}
 }

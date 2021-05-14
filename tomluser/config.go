@@ -3,14 +3,14 @@ package tomluser
 import (
 	"sync"
 
-	"github.com/herb-go/usersystem/services/userprofile"
+	"github.com/herb-go/usersystem/modules/userprofile"
 
 	"github.com/herb-go/usersystem"
-	"github.com/herb-go/usersystem/services/useraccount"
-	"github.com/herb-go/usersystem/services/userpassword"
-	"github.com/herb-go/usersystem/services/userrole"
-	"github.com/herb-go/usersystem/services/userstatus"
-	"github.com/herb-go/usersystem/services/userterm"
+	"github.com/herb-go/usersystem/modules/useraccount"
+	"github.com/herb-go/usersystem/modules/userpassword"
+	"github.com/herb-go/usersystem/modules/userrole"
+	"github.com/herb-go/usersystem/modules/userstatus"
+	"github.com/herb-go/usersystem/modules/userterm"
 
 	"github.com/herb-go/providers/herb/statictoml"
 )

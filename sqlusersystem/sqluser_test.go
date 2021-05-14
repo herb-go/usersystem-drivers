@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	"github.com/herb-go/datasource/sql/querybuilder"
+	"github.com/herb-go/herbsystem"
 	"github.com/herb-go/user/status"
 	"github.com/herb-go/usersystem"
-	"github.com/herb-go/usersystem-drivers/tomluser"
-	"github.com/herb-go/usersystem/services/useraccount"
-	"github.com/herb-go/usersystem/services/userpassword"
-	"github.com/herb-go/usersystem/services/userstatus"
-	"github.com/herb-go/usersystem/services/userterm"
+	"github.com/herb-go/usersystem/modules/useraccount"
+	"github.com/herb-go/usersystem/modules/userpassword"
+	"github.com/herb-go/usersystem/modules/userstatus"
+	"github.com/herb-go/usersystem/modules/userterm"
 	"github.com/herb-go/usersystem/usercreate"
 	"github.com/herb-go/usersystem/userpurge"
 
@@ -41,60 +41,92 @@ func testConfig() *Config {
 	}
 	return &c
 }
+
+func flush() {
+	c := testConfig()
+	database := db.New()
+	err := c.Database.ApplyTo(database)
+	if err != nil {
+		panic(err)
+	}
+	_, err = database.Exec("truncate table account")
+	if err != nil {
+		panic(err)
+	}
+	_, err = database.Exec("truncate table password")
+	if err != nil {
+		panic(err)
+	}
+	_, err = database.Exec("truncate table token")
+	if err != nil {
+		panic(err)
+	}
+	_, err = database.Exec("truncate table user")
+	if err != nil {
+		panic(err)
+	}
+}
 func TestService(t *testing.T) {
 	InitDB()
 	var err error
 	s := usersystem.New()
-	s.Ready()
-	s.Configuring()
+	herbsystem.MustReady(s)
+	herbsystem.MustConfigure(s)
 	err = testConfig().Execute(s)
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.Start()
-	s.Stop()
+	sqluser := New()
+	err = testConfig().ApplyToUser(sqluser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	herbsystem.MustStart(s)
+	herbsystem.MustStop(s)
 	s = usersystem.New()
 	ustatus := userstatus.MustNewAndInstallTo(s)
 	upassword := userpassword.MustNewAndInstallTo(s)
 	uaccounts := useraccount.MustNewAndInstallTo(s)
 	uterm := userterm.MustNewAndInstallTo(s)
-	s.Ready()
-	s.Configuring()
+	herbsystem.MustReady(s)
+	herbsystem.MustConfigure(s)
 	err = testConfig().Execute(s)
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.Start()
+	herbsystem.MustStart(s)
 	uid := "test"
-	ok, err := usercreate.ExecExist(s, uid)
-	if ok || err != nil {
-		t.Fatal(ok, err)
+	ok := usercreate.MustExecExist(s, uid)
+	if ok {
+		t.Fatal(ok)
 	}
-	err = usercreate.ExecCreate(s, uid)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = usercreate.ExecCreate(s, uid)
+	usercreate.MustExecCreate(s, uid)
+	err = herbsystem.Catch(func() {
+		usercreate.MustExecCreate(s, uid)
+	})
 	if err != user.ErrUserExists {
 		t.Fatal(err)
 	}
-	ok, err = usercreate.ExecExist(s, uid)
-	if !ok || err != nil {
-		t.Fatal(ok, err)
+	ok = usercreate.MustExecExist(s, uid)
+	if !ok {
+		t.Fatal(ok)
 	}
-	err = usercreate.ExecRemove(s, uid)
-	if err != nil {
-		t.Fatal(err)
-	}
-	st, err := ustatus.LoadStatus(uid)
+	usercreate.MustExecRemove(s, uid)
+	err = herbsystem.Catch(func() {
+		ustatus.MustLoadStatus(uid)
+	})
 	if err != user.ErrUserNotExists {
 		t.Fatal(err)
 	}
-	err = usercreate.ExecRemove(s, uid)
+	err = herbsystem.Catch(func() {
+		usercreate.MustExecRemove(s, uid)
+	})
 	if err != user.ErrUserNotExists {
 		t.Fatal(err)
 	}
-	err = ustatus.UpdateStatus(uid, status.StatusBanned)
+	err = herbsystem.Catch(func() {
+		ustatus.MustUpdateStatus(uid, status.StatusBanned)
+	})
 	if err != user.ErrUserNotExists {
 		t.Fatal(err)
 	}
@@ -106,15 +138,11 @@ func TestService(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	term, err := uterm.CurrentTerm(uid)
-	if term != "" || err != nil {
-		t.Fatal(term, err)
+	term := uterm.MustCurrentTerm(uid)
+	if term != "" {
+		t.Fatal(term)
 	}
-	term, err = uterm.StartNewTerm(uid)
-	if err != nil {
-		t.Fatal(term, err)
-	}
-
+	term = uterm.MustStartNewTerm(uid)
 	a, err := uaccounts.Accounts(uid)
 	if err != nil {
 		t.Fatal(err)
@@ -128,29 +156,16 @@ func TestService(t *testing.T) {
 		t.Fatal(err)
 	}
 	uid = "newtestuid"
-	err = usercreate.ExecCreate(s, uid)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = usercreate.ExecCreate(s, "test2")
-	if err != nil {
-		t.Fatal(err)
-	}
-	st, err = ustatus.LoadStatus(uid)
-	if err != nil {
-		t.Fatal(err)
-	}
+	usercreate.MustExecCreate(s, uid)
+
+	usercreate.MustExecCreate(s, "test2")
+
+	st := ustatus.MustLoadStatus(uid)
 	if st != status.StatusUnkown {
 		t.Fatal(st)
 	}
-	err = ustatus.UpdateStatus(uid, status.StatusBanned)
-	if err != nil {
-		t.Fatal(err)
-	}
-	st, err = ustatus.LoadStatus(uid)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ustatus.MustUpdateStatus(uid, status.StatusBanned)
+	st = ustatus.MustLoadStatus(uid)
 	if st != status.StatusBanned {
 		t.Fatal(st)
 	}
@@ -158,10 +173,8 @@ func TestService(t *testing.T) {
 	if !ok {
 		t.Fatal(ok)
 	}
-	err = userpurge.ExecPurge(s, uid)
-	if err != nil {
-		t.Fatal(err)
-	}
+	userpurge.MustExecPurge(s, uid)
+
 	ok, err = upassword.VerifyPassword(uid, "password")
 	if ok != false || err != nil {
 		t.Fatal(err)
@@ -174,14 +187,10 @@ func TestService(t *testing.T) {
 	if ok != true || err != nil {
 		t.Fatal(err)
 	}
-	term, err = uterm.CurrentTerm(uid)
-	if err != nil {
-		panic(err)
-	}
-	newterm, err := uterm.StartNewTerm(uid)
-	if err != nil {
-		panic(err)
-	}
+	term = uterm.MustCurrentTerm(uid)
+
+	newterm := uterm.MustStartNewTerm(uid)
+
 	if newterm == term {
 		t.Fatal(newterm)
 	}
@@ -223,25 +232,22 @@ func TestService(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.Stop()
-	tomluser.Flush()
+	herbsystem.MustStop(s)
+	// flush()
 	s = usersystem.New()
 	ustatus = userstatus.MustNewAndInstallTo(s)
 	upassword = userpassword.MustNewAndInstallTo(s)
 	uaccounts = useraccount.MustNewAndInstallTo(s)
 	uterm = userterm.MustNewAndInstallTo(s)
-	s.Ready()
-	s.Configuring()
+	herbsystem.MustReady(s)
+	herbsystem.MustConfigure(s)
 	err = testConfig().Execute(s)
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.Start()
-	defer s.Stop()
-	st, err = ustatus.LoadStatus(uid)
-	if err != nil {
-		t.Fatal(err)
-	}
+	herbsystem.MustStart(s)
+	defer herbsystem.MustStop(s)
+	st = ustatus.MustLoadStatus(uid)
 	if st != status.StatusBanned {
 		t.Fatal(st)
 	}
@@ -250,10 +256,8 @@ func TestService(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	term, err = uterm.CurrentTerm(uid)
-	if err != nil {
-		panic(err)
-	}
+	term = uterm.MustCurrentTerm(uid)
+
 	if newterm != term {
 		t.Fatal(newterm)
 	}
@@ -261,44 +265,36 @@ func TestService(t *testing.T) {
 	if err != nil || accid != uid {
 		t.Fatal(accid, err)
 	}
-	err = usercreate.ExecRemove(s, uid)
-	if err != nil {
-		t.Fatal(err)
+	usercreate.MustExecRemove(s, uid)
+
+	ustatus.MustUpdateStatus("test2", status.StatusNormal)
+	usercreate.MustExecCreate(s, "test3")
+
+	ustatus.MustUpdateStatus("test3", status.StatusNormal)
+	usercreate.MustExecCreate(s, "test4")
+
+	ustatus.MustUpdateStatus("test4", status.StatusBanned)
+	usercreate.MustExecCreate(s, "test5")
+
+	ustatus.MustUpdateStatus("test5", status.StatusBanned)
+	users := ustatus.Service.MustListUsersByStatus("", 0, false, status.StatusNormal, status.StatusBanned)
+	if len(users) != 4 {
+		t.Fatal(users)
 	}
-	err = ustatus.UpdateStatus("test2", status.StatusNormal)
-	err = usercreate.ExecCreate(s, "test3")
-	if err != nil {
-		t.Fatal(err)
+	users = ustatus.Service.MustListUsersByStatus("", 3, false, status.StatusNormal, status.StatusBanned)
+	if len(users) != 3 {
+		t.Fatal(users)
 	}
-	err = ustatus.UpdateStatus("test3", status.StatusNormal)
-	err = usercreate.ExecCreate(s, "test4")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = ustatus.UpdateStatus("test4", status.StatusBanned)
-	err = usercreate.ExecCreate(s, "test5")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = ustatus.UpdateStatus("test5", status.StatusBanned)
-	users, err := ustatus.Service.ListUsersByStatus("", 0, status.StatusNormal, status.StatusBanned)
-	if len(users) != 4 || err != nil {
+	users = ustatus.Service.MustListUsersByStatus("test3", 3, false, status.StatusNormal, status.StatusBanned)
+	if len(users) != 2 {
 		t.Fatal(users, err)
 	}
-	users, err = ustatus.Service.ListUsersByStatus("", 3, status.StatusNormal, status.StatusBanned)
-	if len(users) != 3 || err != nil {
-		t.Fatal(users, err)
+	users = ustatus.Service.MustListUsersByStatus("test2", 1, false, status.StatusBanned)
+	if len(users) != 1 {
+		t.Fatal(users)
 	}
-	users, err = ustatus.Service.ListUsersByStatus("test3", 3, status.StatusNormal, status.StatusBanned)
-	if len(users) != 2 || err != nil {
-		t.Fatal(users, err)
-	}
-	users, err = ustatus.Service.ListUsersByStatus("test2", 1, status.StatusBanned)
-	if len(users) != 1 || err != nil {
-		t.Fatal(users, err)
-	}
-	users, err = ustatus.Service.ListUsersByStatus("test2", 0, status.StatusBanned)
-	if len(users) != 2 || err != nil {
-		t.Fatal(users, err)
+	users = ustatus.Service.MustListUsersByStatus("test2", 0, false, status.StatusBanned)
+	if len(users) != 2 {
+		t.Fatal(users)
 	}
 }

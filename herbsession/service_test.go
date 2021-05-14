@@ -12,6 +12,7 @@ import (
 	"github.com/herb-go/herb/service/httpservice/httpcookie"
 	_ "github.com/herb-go/herbdata-drivers/kvdb-drivers/freecachedb"
 	"github.com/herb-go/herbmodules/httpsession"
+	"github.com/herb-go/herbsystem"
 	"github.com/herb-go/usersystem"
 	"github.com/herb-go/usersystem-drivers/herbsession"
 	"github.com/herb-go/usersystem/httpusersystem/services/websession"
@@ -54,8 +55,8 @@ func TestClientService(t *testing.T) {
 	var err error
 	s := usersystem.New().WithKeyword("test")
 	hs := websession.MustNewAndInstallTo(s)
-	s.Ready()
-	s.Configuring()
+	herbsystem.MustReady(s)
+	herbsystem.MustConfigure(s)
 	err = testClientConfig().Execute(s)
 	if err != nil {
 		t.Fatal(err)
@@ -63,28 +64,19 @@ func TestClientService(t *testing.T) {
 	if string(hs.Service.(*herbsession.Service).Prefix) != "test" {
 		t.Fatal()
 	}
-	s.Start()
-	defer s.Stop()
+	herbsystem.MustStart(s)
+	defer herbsystem.MustStop(s)
 	mux := &http.ServeMux{}
 	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-		session, err := hs.Login(r, "testuid")
-		if err != nil {
-			panic(err)
-		}
+		session := hs.MustLogin(r, "testuid")
 		w.Write([]byte(session.ID))
 	})
 	mux.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
-		_, err := hs.Logout(r)
-		if err != nil {
-			panic(err)
-		}
+		hs.MustLogout(r)
 		w.Write([]byte("ok"))
 	})
 	mux.HandleFunc("/uid", func(w http.ResponseWriter, r *http.Request) {
-		session, err := hs.GetRequestSession(r)
-		if err != nil {
-			panic(err)
-		}
+		session := hs.MustGetRequestSession(r)
 		if session == nil {
 			w.Write([]byte{})
 			return
@@ -138,10 +130,7 @@ func TestClientService(t *testing.T) {
 	}
 	resp.Body.Close()
 	sid := string(bs)
-	session, err := hs.GetSession(sid)
-	if err != nil {
-		t.Fatal(err, sid)
-	}
+	session := hs.MustGetSession(sid)
 	if session == nil || session.Type != websession.SessionType {
 		t.Fatal(session)
 	}
@@ -228,10 +217,7 @@ func TestClientService(t *testing.T) {
 	if uid != "" {
 		t.Fatal(uid)
 	}
-	session, err = hs.GetSession("notexist")
-	if err != nil {
-		t.Fatal(err, sid)
-	}
+	session = hs.MustGetSession("notexist")
 	if session != nil {
 		t.Fatal()
 	}
@@ -278,8 +264,8 @@ func TestKeyValueService(t *testing.T) {
 	s := usersystem.New().WithKeyword("test")
 
 	hs := websession.MustNewAndInstallTo(s)
-	s.Ready()
-	s.Configuring()
+	herbsystem.MustReady(s)
+	herbsystem.MustConfigure(s)
 	err = testKeyValueConfig().Execute(s)
 	if err != nil {
 		t.Fatal(err)
@@ -287,28 +273,19 @@ func TestKeyValueService(t *testing.T) {
 	if string(hs.Service.(*herbsession.Service).Prefix) != "test" {
 		t.Fatal()
 	}
-	s.Start()
-	defer s.Stop()
+	herbsystem.MustStart(s)
+	defer herbsystem.MustStop(s)
 	mux := &http.ServeMux{}
 	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-		session, err := hs.Login(r, "testuid")
-		if err != nil {
-			panic(err)
-		}
+		session := hs.MustLogin(r, "testuid")
 		w.Write([]byte(session.ID))
 	})
 	mux.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
-		_, err := hs.Logout(r)
-		if err != nil {
-			panic(err)
-		}
+		hs.MustLogout(r)
 		w.Write([]byte("ok"))
 	})
 	mux.HandleFunc("/uid", func(w http.ResponseWriter, r *http.Request) {
-		session, err := hs.GetRequestSession(r)
-		if err != nil {
-			panic(err)
-		}
+		session := hs.MustGetRequestSession(r)
 		if session == nil || session.ID == "" {
 			w.Write([]byte{})
 			return
@@ -362,10 +339,7 @@ func TestKeyValueService(t *testing.T) {
 	}
 	resp.Body.Close()
 	sid := string(bs)
-	session, err := hs.GetSession(sid)
-	if err != nil {
-		t.Fatal(err, sid)
-	}
+	session := hs.MustGetSession(sid)
 	if session == nil || session.Type != websession.SessionType || session.ID == "" {
 		t.Fatal()
 	}
@@ -452,10 +426,7 @@ func TestKeyValueService(t *testing.T) {
 	if uid != "" {
 		t.Fatal(uid)
 	}
-	session, err = hs.GetSession("notexist")
-	if err != nil {
-		t.Fatal(err, sid)
-	}
+	session = hs.MustGetSession("notexist")
 	if session != nil {
 		t.Fatal()
 	}
@@ -470,14 +441,11 @@ func TestKeyValueService(t *testing.T) {
 	resp.Body.Close()
 	sid = string(bs)
 
-	ok, err := hs.RevokeSession(sid)
-	if !ok || err != nil {
+	ok := hs.MustRevokeSession(sid)
+	if !ok {
 		t.Fatal(ok, err)
 	}
-	session, err = hs.GetSession(sid)
-	if err != nil {
-		t.Fatal(err, sid)
-	}
+	session = hs.MustGetSession(sid)
 	if session != nil {
 		t.Fatal()
 	}

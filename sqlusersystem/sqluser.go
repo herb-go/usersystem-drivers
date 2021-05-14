@@ -523,7 +523,7 @@ type TokenMapper struct {
 	User *User
 }
 
-func (t *TokenMapper) CurrentTerm(uid string) (string, error) {
+func (t *TokenMapper) MustCurrentTerm(uid string) string {
 	query := t.User.QueryBuilder
 	Select := query.NewSelectQuery()
 	Select.Select.Add("token.token")
@@ -534,18 +534,22 @@ func (t *TokenMapper) CurrentTerm(uid string) (string, error) {
 	err := row.Scan(&token)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return "", nil
+			return ""
 		}
-		return "", err
+		panic(err)
 	}
-	return token, nil
+	return token
 }
-func (t *TokenMapper) StartNewTerm(uid string) (string, error) {
+func (t *TokenMapper) MustStartNewTerm(uid string) string {
 	token, err := t.User.TokenGenerater()
 	if err != nil {
-		return "", err
+		panic(err)
 	}
-	return token, t.InsertOrUpdate(uid, token)
+	err = t.InsertOrUpdate(uid, token)
+	if err != nil {
+		panic(err)
+	}
+	return token
 }
 
 //Start start service
@@ -628,7 +632,7 @@ func (u *UserMapper) Label(userstats status.Status) (string, error) {
 	return status.NormalOrBannedService.Label(userstats)
 }
 
-func (u *UserMapper) LoadStatus(uid string) (status.Status, error) {
+func (u *UserMapper) MustLoadStatus(uid string) status.Status {
 	var userstatus status.Status
 	query := u.User.QueryBuilder
 	Select := query.NewSelectQuery()
@@ -639,17 +643,17 @@ func (u *UserMapper) LoadStatus(uid string) (status.Status, error) {
 	err := row.Scan(&userstatus)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return 0, user.ErrUserNotExists
+			panic(user.ErrUserNotExists)
 		}
-		return 0, err
+		panic(err)
 	}
-	return userstatus, nil
+	return userstatus
 }
-func (u *UserMapper) UpdateStatus(uid string, userstatus status.Status) error {
+func (u *UserMapper) MustUpdateStatus(uid string, userstatus status.Status) {
 	query := u.User.QueryBuilder
 	tx, err := u.DB().Begin()
 	if err != nil {
-		return err
+		panic(err)
 	}
 	defer tx.Rollback()
 	var CreatedTime = time.Now().Unix()
@@ -660,22 +664,26 @@ func (u *UserMapper) UpdateStatus(uid string, userstatus status.Status) error {
 	Update.Where.Condition = query.Equal("uid", uid)
 	r, err := Update.Query().Exec(tx)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	affected, err := r.RowsAffected()
 	if err != nil {
-		return err
+		panic(err)
 	}
 	if affected != 0 {
-		return tx.Commit()
+		err = tx.Commit()
+		if err != nil {
+			panic(err)
+		}
+		return
 	}
-	return user.ErrUserNotExists
+	panic(user.ErrUserNotExists)
 }
-func (u *UserMapper) CreateStatus(uid string) error {
+func (u *UserMapper) MustCreateStatus(uid string) {
 	query := u.User.QueryBuilder
 	tx, err := u.DB().Begin()
 	if err != nil {
-		return err
+		panic(err)
 	}
 	defer tx.Rollback()
 	var CreatedTime = time.Now().Unix()
@@ -688,30 +696,32 @@ func (u *UserMapper) CreateStatus(uid string) error {
 	_, err = Insert.Query().Exec(tx)
 	if err != nil {
 		if query.IsDuplicate(err) {
-			return user.ErrUserExists
+			panic(user.ErrUserExists)
 		}
-		return err
+		panic(err)
 	}
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		panic(err)
+	}
 }
-func (u *UserMapper) RemoveStatus(uid string) error {
+func (u *UserMapper) MustRemoveStatus(uid string) {
 	query := u.User.QueryBuilder
 	Delete := query.NewDeleteQuery(u.TableName())
 	Delete.Where.Condition = query.Equal("uid", uid)
 	result, err := Delete.Query().Exec(u.DB())
 	if err != nil {
-		return err
+		panic(err)
 	}
 	a, err := result.RowsAffected()
 	if err != nil {
-		return err
+		panic(err)
 	}
 	if a == 0 {
-		return user.ErrUserNotExists
+		panic(user.ErrUserNotExists)
 	}
-	return nil
 }
-func (u *UserMapper) ListUsersByStatus(last string, limit int, reverse bool, statuses ...status.Status) ([]string, error) {
+func (u *UserMapper) MustListUsersByStatus(last string, limit int, reverse bool, statuses ...status.Status) []string {
 	query := u.User.QueryBuilder
 	Select := query.NewSelectQuery()
 	Select.Select.Add("user.uid")
@@ -732,7 +742,7 @@ func (u *UserMapper) ListUsersByStatus(last string, limit int, reverse bool, sta
 	Select.OrderBy.Add("user.uid", !reverse)
 	rows, err := Select.QueryRows(u.DB())
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	defer rows.Close()
 	var result []string
@@ -740,11 +750,11 @@ func (u *UserMapper) ListUsersByStatus(last string, limit int, reverse bool, sta
 		var uid string
 		err = rows.Scan(&uid)
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 		result = append(result, uid)
 	}
-	return result, nil
+	return result
 }
 func (u *UserMapper) Purge(uid string) error {
 	return nil

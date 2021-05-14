@@ -3,7 +3,7 @@ package redisactives
 import (
 	"time"
 
-	"github.com/herb-go/usersystem/services/activesessions"
+	"github.com/herb-go/usersystem/modules/activesessions"
 )
 
 type entry struct {

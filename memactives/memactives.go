@@ -6,10 +6,8 @@ import (
 
 	"github.com/herb-go/uniqueid"
 
-	"github.com/herb-go/herbsystem"
-
 	"github.com/herb-go/usersystem"
-	"github.com/herb-go/usersystem/services/activesessions"
+	"github.com/herb-go/usersystem/modules/activesessions"
 )
 
 type UserData map[string]*activesessions.Active
@@ -155,49 +153,49 @@ type Service struct {
 	Stores map[usersystem.SessionType]*StoreList
 }
 
-func (s *Service) Config(st usersystem.SessionType) (*activesessions.Config, error) {
+func (s *Service) MustConfig(st usersystem.SessionType) *activesessions.Config {
 	stores, ok := s.Stores[st]
 	if !ok {
 		return &activesessions.Config{
 			Supported: false,
-		}, nil
+		}
 	}
 	return &activesessions.Config{
 		Supported: true,
 		Duration:  stores.Duration,
-	}, nil
+	}
 }
-func (s *Service) OnSessionActive(session *usersystem.Session) error {
+func (s *Service) MustOnSessionActive(session *usersystem.Session) {
 	if session == nil {
-		return nil
+		return
 	}
 	stores, ok := s.Stores[session.Type]
 	if !ok {
-		return nil
+		return
 	}
 	stores.OnSessionActive(session)
-	return nil
+	return
 }
-func (s *Service) GetActiveSessions(st usersystem.SessionType, uid string) ([]*activesessions.Active, error) {
+func (s *Service) MustGetActiveSessions(st usersystem.SessionType, uid string) []*activesessions.Active {
 	stores, ok := s.Stores[st]
 	if !ok {
-		return nil, nil
+		return nil
 	}
-	return stores.GetActiveSessions(uid), nil
+	return stores.GetActiveSessions(uid)
 }
-func (s *Service) PurgeActiveSession(st usersystem.SessionType, uid string, serialnumber string) error {
+func (s *Service) MustPurgeActiveSession(st usersystem.SessionType, uid string, serialnumber string) {
 	if uid == "" || serialnumber == "" {
-		return nil
+		return
 	}
 	stores, ok := s.Stores[st]
 	if !ok {
-		return nil
+		return
 	}
 	stores.PurgeActiveSession(uid, serialnumber)
-	return nil
+	return
 }
-func (s *Service) CreateSerialNumber() (string, error) {
-	return uniqueid.DefaultGenerator.GenerateID()
+func (s *Service) MustCreateSerialNumber() string {
+	return uniqueid.DefaultGenerator.MustGenerateID()
 }
 func (s *Service) Start() error {
 	var err error
@@ -210,17 +208,13 @@ func (s *Service) Start() error {
 	return nil
 }
 func (s *Service) Stop() error {
-	var err error
 	for _, v := range s.Stores {
-		herbsystem.MergeError(err, v.Stop())
+		v.Stop()
 	}
-	return err
+	return nil
 }
 func (s *Service) Execute(us *usersystem.UserSystem) error {
-	as, err := activesessions.GetService(us)
-	if err != nil {
-		return err
-	}
+	as := activesessions.MustGetModule(us)
 	if as == nil {
 		return nil
 	}

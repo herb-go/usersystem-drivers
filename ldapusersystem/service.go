@@ -3,8 +3,8 @@ package ldapusersystem
 import (
 	"github.com/herb-go/user/profile"
 	"github.com/herb-go/usersystem"
-	"github.com/herb-go/usersystem/services/userpassword"
-	"github.com/herb-go/usersystem/services/userprofile"
+	"github.com/herb-go/usersystem/modules/userpassword"
+	"github.com/herb-go/usersystem/modules/userprofile"
 	"gopkg.in/ldap.v2"
 )
 
@@ -48,18 +48,18 @@ func (s *Service) Stop() error {
 func (s *Service) Purge(string) error {
 	return nil
 }
-func (s *Service) GetProfile(id string) (*profile.Profile, error) {
+func (s *Service) MustGetProfile(id string) *profile.Profile {
 	if len(s.ProfileFields) == 0 {
-		return nil, nil
+		return nil
 	}
 	l, err := s.LDAP.DialBound()
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	defer l.Close()
 	data, err := s.LDAP.search(l, id, s.ProfileFields...)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	profile := profile.NewProfile()
 	for k := range data {
@@ -67,27 +67,20 @@ func (s *Service) GetProfile(id string) (*profile.Profile, error) {
 			profile.With(k, v)
 		}
 	}
-	return profile, nil
+	return profile
 }
-func (s *Service) UpdateProfile(id string, p *profile.Profile) error {
-	return nil
+func (s *Service) MustUpdateProfile(id string, p *profile.Profile) {
 }
 func (s *Service) Execute(us *usersystem.UserSystem) error {
 	if s.ServePassword {
-		up, err := userpassword.GetService(us)
-		if err != nil {
-			return err
-		}
+		up := userpassword.MustGetModule(us)
 		if up != nil {
 			up.Service = s
 		}
 	}
 
 	if len(s.ProfileFields) != 0 {
-		up, err := userprofile.GetService(us)
-		if err != nil {
-			return err
-		}
+		up := userprofile.MustGetModule(us)
 		if up != nil {
 			up.AppendService(s)
 		}

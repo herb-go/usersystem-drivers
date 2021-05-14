@@ -6,7 +6,7 @@ import (
 
 	"github.com/herb-go/datasource/redis/redispool"
 	"github.com/herb-go/usersystem"
-	"github.com/herb-go/usersystem/services/activesessions"
+	"github.com/herb-go/usersystem/modules/activesessions"
 )
 
 type Config struct {
