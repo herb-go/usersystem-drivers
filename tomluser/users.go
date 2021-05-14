@@ -25,21 +25,21 @@ type Users struct {
 	ProfileFields map[string]bool
 }
 
-func (u *Users) GetProfile(id string) (*profile.Profile, error) {
+func (u *Users) MustGetProfile(id string) *profile.Profile {
 	u.locker.RLock()
 	defer u.locker.RUnlock()
 	userdata := u.uidmap[id]
 	if userdata == nil {
-		return nil, user.ErrUserNotExists
+		panic(user.ErrUserNotExists)
 	}
-	return userdata.Profiles.Clone(), nil
+	return userdata.Profiles.Clone()
 }
-func (u *Users) UpdateProfile(id string, p *profile.Profile) error {
+func (u *Users) MustUpdateProfile(id string, p *profile.Profile) {
 	u.locker.Lock()
 	defer u.locker.Unlock()
 	userdata := u.uidmap[id]
 	if userdata == nil {
-		return user.ErrUserNotExists
+		panic(user.ErrUserNotExists)
 	}
 	prf := profile.NewProfile()
 	for _, v := range p.Data() {
@@ -48,7 +48,7 @@ func (u *Users) UpdateProfile(id string, p *profile.Profile) error {
 		}
 	}
 	userdata.Profiles = prf
-	return u.save()
+	u.mustSave()
 }
 
 func (u *Users) GetAllUsers() *Data {
@@ -59,59 +59,66 @@ func (u *Users) GetAllUsers() *Data {
 	}
 	return data
 }
+func (u *Users) mustSave() {
+	err := u.save()
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (u *Users) save() error {
 	return u.Source.Save(u.GetAllUsers())
 }
-func (u *Users) LoadStatus(id string) (status.Status, error) {
+func (u *Users) MustLoadStatus(id string) status.Status {
 	u.locker.RLock()
 	defer u.locker.RUnlock()
 	var st status.Status
 	userdata := u.uidmap[id]
 	if userdata == nil {
-		return st, user.ErrUserNotExists
+		panic(user.ErrUserNotExists)
 	}
 	if userdata.Banned {
 		st = status.StatusBanned
 	} else {
 		st = status.StatusNormal
 	}
-	return st, nil
+	return st
 
 }
-func (u *Users) UpdateStatus(uid string, st status.Status) error {
+func (u *Users) MustUpdateStatus(uid string, st status.Status) {
 	u.locker.Lock()
 	defer u.locker.Unlock()
 
 	if u.uidmap[uid] == nil {
-		return user.ErrUserNotExists
+		panic(user.ErrUserNotExists)
 	}
 	ok, err := status.NormalOrBannedService.IsAvailable(st)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	u.uidmap[uid].Banned = !ok
-	return u.save()
+	u.mustSave()
 
 }
-func (u *Users) CreateStatus(uid string) error {
+func (u *Users) MustCreateStatus(uid string) {
 	u.locker.Lock()
 	defer u.locker.Unlock()
 	if u.uidmap[uid] != nil {
-		return user.ErrUserExists
+		panic(user.ErrUserExists)
 	}
 	newuser := NewUser()
 	newuser.UID = uid
 	u.addUser(newuser)
-	return u.save()
+	u.mustSave()
 }
-func (u *Users) RemoveStatus(uid string) error {
+func (u *Users) MustRemoveStatus(uid string) {
 	u.locker.Lock()
 	defer u.locker.Unlock()
 	if u.uidmap[uid] == nil {
-		return user.ErrUserNotExists
+		panic(user.ErrUserNotExists)
 	}
 	u.removeUser(uid)
-	return u.save()
+	u.mustSave()
 
 }
 func (u *Users) getAfterLast(last string, users []string, reverse bool) []string {
@@ -131,14 +138,14 @@ func (u *Users) getAfterLast(last string, users []string, reverse bool) []string
 	return []string{}
 }
 
-func (u *Users) ListUsersByStatus(last string, limit int, reverse bool, statuses ...status.Status) ([]string, error) {
+func (u *Users) MustListUsersByStatus(last string, limit int, reverse bool, statuses ...status.Status) []string {
 	u.locker.RLock()
 	defer u.locker.RUnlock()
 	m := map[bool]bool{}
 	for k := range statuses {
 		ok, err := u.IsAvailable(statuses[k])
 		if err != nil {
-			return nil, nil
+			return nil
 		}
 		m[!ok] = true
 	}
@@ -150,9 +157,9 @@ func (u *Users) ListUsersByStatus(last string, limit int, reverse bool, statuses
 	}
 	result := u.getAfterLast(last, users, reverse)
 	if limit > 0 && limit < len(result) {
-		return result[:limit], nil
+		return result[:limit]
 	}
-	return result, nil
+	return result
 }
 
 //VerifyPassword Verify user password.
@@ -187,14 +194,14 @@ func (u *Users) UpdatePassword(uid string, password string) error {
 	}
 	return u.save()
 }
-func (u *Users) Roles(uid string) (*role.Roles, error) {
+func (u *Users) MustRoles(uid string) *role.Roles {
 	u.locker.Lock()
 	defer u.locker.Unlock()
 	us := u.uidmap[uid]
 	if us == nil {
-		return nil, user.ErrUserNotExists
+		panic(user.ErrUserNotExists)
 	}
-	return us.Roles.Clone(), nil
+	return us.Roles.Clone()
 }
 func (u *Users) SetRoles(uid string, r *role.Roles) error {
 	u.locker.Lock()
@@ -291,29 +298,29 @@ func (u *Users) UnbindAccount(uid string, account *user.Account) error {
 	return u.save()
 }
 
-func (u *Users) CurrentTerm(uid string) (string, error) {
+func (u *Users) MustCurrentTerm(uid string) string {
 	u.locker.Lock()
 	defer u.locker.Unlock()
 	us := u.uidmap[uid]
 	if us == nil {
-		return "", user.ErrUserNotExists
+		panic(user.ErrUserNotExists)
 	}
-	return us.Term, nil
+	return us.Term
 
 }
-func (u *Users) StartNewTerm(uid string) (string, error) {
+func (u *Users) MustStartNewTerm(uid string) string {
 	u.locker.Lock()
 	defer u.locker.Unlock()
 	us := u.uidmap[uid]
 	if us == nil {
-		return "", user.ErrUserNotExists
+		panic(user.ErrUserNotExists)
 	}
 	term, err := u.idFactory()
 	if err != nil {
-		return "", err
+		panic(err)
 	}
 	us.Term = term
-	return term, nil
+	return term
 }
 
 func (u *Users) addUser(user *User) {

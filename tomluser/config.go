@@ -81,55 +81,37 @@ func (c *Config) Execute(s *usersystem.UserSystem) error {
 		return err
 	}
 	if c.ServeStatus {
-		ss, err := userstatus.GetService(s)
-		if err != nil {
-			return err
-		}
+		ss := userstatus.MustGetModule(s)
 		if ss != nil {
 			ss.Service = u
 		}
 	}
 	if c.ServeAccounts {
-		ua, err := useraccount.GetService(s)
-		if err != nil {
-			return err
-		}
+		ua := useraccount.MustGetModule(s)
 		if ua != nil {
 			ua.Service = u
 		}
 	}
 	if c.ServePassword {
-		up, err := userpassword.GetService(s)
-		if err != nil {
-			return err
-		}
+		up := userpassword.MustGetModule(s)
 		if up != nil {
 			up.Service = u
 		}
 	}
 	if c.ServeRoles {
-		ur, err := userrole.GetService(s)
-		if err != nil {
-			return err
-		}
+		ur := userrole.MustGetModule(s)
 		if ur != nil {
 			ur.Service = u
 		}
 	}
 	if c.ServeTerm {
-		ut, err := userterm.GetService(s)
-		if err != nil {
-			return err
-		}
+		ut := userterm.MustGetModule(s)
 		if ut != nil {
 			ut.Service = u
 		}
 	}
 	if c.ServeProfile {
-		up, err := userprofile.GetService(s)
-		if err != nil {
-			return err
-		}
+		up := userprofile.MustGetModule(s)
 		if up != nil {
 			up.AppendService(u)
 		}
