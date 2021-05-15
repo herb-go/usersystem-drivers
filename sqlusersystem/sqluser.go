@@ -186,8 +186,8 @@ type AccountMapper struct {
 	User *User
 }
 
-//Accounts return accounts of give uid.
-func (a *AccountMapper) Accounts(uid string) (*user.Accounts, error) {
+//MustAccounts return accounts of give uid.
+func (a *AccountMapper) MustAccounts(uid string) *user.Accounts {
 	query := a.User.QueryBuilder
 	var result = []*user.Account{}
 	Select := query.NewSelectQuery()
@@ -196,7 +196,7 @@ func (a *AccountMapper) Accounts(uid string) (*user.Accounts, error) {
 	Select.Where.Condition = query.Equal("account.uid", uid)
 	rows, err := Select.QueryRows(a.DB())
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -206,26 +206,25 @@ func (a *AccountMapper) Accounts(uid string) (*user.Accounts, error) {
 			Bind("account.account", &v.Account).
 			ScanFrom(rows)
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 		result = append(result, v)
 	}
 	accounts := user.Accounts(result)
-	return &accounts, nil
+	return &accounts
 }
 
-//AccountToUID query uid by user account.
-//Return user id and any error if raised.
-//Return empty string as userid if account not found.
-func (a *AccountMapper) AccountToUID(account *user.Account) (uid string, err error) {
+//MustAccountToUID query uid by user account.
+//Return user id .
+func (a *AccountMapper) MustAccountToUID(account *user.Account) (uid string) {
 	model, err := a.Find(account.Keyword, account.Account)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return "", nil
+			return ""
 		}
-		return "", err
+		panic(err)
 	}
-	return model.UID, nil
+	return model.UID
 }
 
 func (a *AccountMapper) Start() error {
@@ -336,17 +335,21 @@ func (a *AccountMapper) Find(keyword string, account string) (*AccountModel, err
 	return result, err
 }
 
-//BindAccount bind account to user.
-//Return any error if rasied.
+//MustBindAccount bind account to user.
 //If account exists, error user.ErrAccountBindingExists will raised.
-func (a *AccountMapper) BindAccount(uid string, account *user.Account) error {
-	return a.Bind(uid, account)
+func (a *AccountMapper) MustBindAccount(uid string, account *user.Account) {
+	err := a.Bind(uid, account)
+	if err != nil {
+		panic(err)
+	}
 }
 
-//UnbindAccount unbind account from user.
-//Return any error if rasied.
-func (a *AccountMapper) UnbindAccount(uid string, account *user.Account) error {
-	return a.Unbind(uid, account)
+//MustUnbindAccount unbind account from user.
+func (a *AccountMapper) MustUnbindAccount(uid string, account *user.Account) {
+	err := a.Unbind(uid, account)
+	if err != nil {
+		panic(err)
+	}
 }
 
 //AccountModel account data model
@@ -632,7 +635,7 @@ func (u *UserMapper) Label(userstats status.Status) (string, error) {
 	return status.NormalOrBannedService.Label(userstats)
 }
 
-func (u *UserMapper) MustLoadStatus(uid string) status.Status {
+func (u *UserMapper) MustLoadStatus(uid string) (status.Status, bool) {
 	var userstatus status.Status
 	query := u.User.QueryBuilder
 	Select := query.NewSelectQuery()
@@ -643,11 +646,11 @@ func (u *UserMapper) MustLoadStatus(uid string) status.Status {
 	err := row.Scan(&userstatus)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			panic(user.ErrUserNotExists)
+			return status.StatusUnkown, false
 		}
 		panic(err)
 	}
-	return userstatus
+	return userstatus, true
 }
 func (u *UserMapper) MustUpdateStatus(uid string, userstatus status.Status) {
 	query := u.User.QueryBuilder
