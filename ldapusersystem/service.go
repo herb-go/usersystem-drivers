@@ -14,19 +14,22 @@ type Service struct {
 	ServePassword bool
 }
 
-func (s *Service) VerifyPassword(uid string, password string) (bool, error) {
+func (s *Service) MustVerifyPassword(uid string, password string) bool {
 	l, err := s.LDAP.BindUser(uid, password)
 	if err != nil {
 		if ldap.IsErrorWithCode(err, ldap.LDAPResultInvalidCredentials) {
-			return false, nil
+			return false
 		}
-		return false, err
+		panic(err)
 	}
 	defer l.Close()
-	return true, nil
+	return true
 }
-func (s *Service) UpdatePassword(uid string, password string) error {
-	return s.LDAP.UpdatePassword(uid, password)
+func (s *Service) MustUpdatePassword(uid string, password string) {
+	err := s.LDAP.UpdatePassword(uid, password)
+	if err != nil {
+		panic(err)
+	}
 }
 
 //PasswordChangeable return password changeable
