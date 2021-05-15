@@ -162,16 +162,19 @@ func (u *Users) MustListUsersByStatus(last string, limit int, reverse bool, stat
 	return result
 }
 
-//VerifyPassword Verify user password.
-//Return verify result and any error if raised
-func (u *Users) VerifyPassword(uid string, password string) (bool, error) {
+//MustVerifyPassword Verify user password.
+func (u *Users) MustVerifyPassword(uid string, password string) bool {
 	u.locker.RLock()
 	defer u.locker.RUnlock()
 	user := u.uidmap[uid]
 	if user == nil {
-		return false, nil
+		return false
 	}
-	return user.VerifyPassword(password)
+	ok, err := user.VerifyPassword(password)
+	if err != nil {
+		panic(err)
+	}
+	return ok
 }
 
 //PasswordChangeable return password changeable
@@ -180,19 +183,18 @@ func (u *Users) PasswordChangeable() bool {
 }
 
 //UpdatePassword update user password
-//Return any error if raised
-func (u *Users) UpdatePassword(uid string, password string) error {
+func (u *Users) MustUpdatePassword(uid string, password string) {
 	u.locker.Lock()
 	defer u.locker.Unlock()
 	us := u.uidmap[uid]
 	if us == nil {
-		return user.ErrUserNotExists
+		panic(user.ErrUserNotExists)
 	}
 	err := us.UpdatePassword(u.HashMode, password)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	return u.save()
+	u.mustSave()
 }
 func (u *Users) MustRoles(uid string) *role.Roles {
 	u.locker.Lock()

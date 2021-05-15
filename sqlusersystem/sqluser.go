@@ -460,41 +460,39 @@ func (p *PasswordMapper) InsertOrUpdate(model *PasswordModel) error {
 }
 
 //VerifyPassword Verify user password.
-//Return verify and any error if raised.
 //if user not found,error user.ErrUserNotExists will be raised.
-func (p *PasswordMapper) VerifyPassword(uid string, password string) (bool, error) {
+func (p *PasswordMapper) MustVerifyPassword(uid string, password string) bool {
 	model, err := p.Find(uid)
 	if err == sql.ErrNoRows {
-		return false, nil
+		return false
 	}
 	if err != nil {
-		return false, err
+		panic(err)
 	}
 	hash := HashFuncMap[model.HashMethod]
 	if hash == nil {
-		return false, ErrHashMethodNotFound
+		panic(ErrHashMethodNotFound)
 	}
 	hashed, err := hash(p.User.PasswordKey, model.Salt, password)
 	if err != nil {
-		return false, err
+		panic(err)
 	}
-	return bytes.Compare(hashed, model.Password) == 0, nil
+	return bytes.Compare(hashed, model.Password) == 0
 }
 
 //UpdatePassword update user password.If user password does not exist,new password record will be created.
-//Return any error if raised.
-func (p *PasswordMapper) UpdatePassword(uid string, password string) error {
+func (p *PasswordMapper) MustUpdatePassword(uid string, password string) {
 	salt, err := p.User.SaltGenerater()
 	if err != nil {
-		return err
+		panic(err)
 	}
 	hash := HashFuncMap[p.User.HashMethod]
 	if hash == nil {
-		return ErrHashMethodNotFound
+		panic(ErrHashMethodNotFound)
 	}
 	hashed, err := hash(p.User.PasswordKey, salt, password)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	model := &PasswordModel{
 		UID:         uid,
@@ -503,7 +501,10 @@ func (p *PasswordMapper) UpdatePassword(uid string, password string) error {
 		Password:    hashed,
 		UpdatedTime: time.Now().Unix(),
 	}
-	return p.InsertOrUpdate(model)
+	err = p.InsertOrUpdate(model)
+	if err != nil {
+		panic(err)
+	}
 }
 
 //PasswordModel password data model

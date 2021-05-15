@@ -107,14 +107,13 @@ func TestService(t *testing.T) {
 	if err != user.ErrUserNotExists {
 		t.Fatal(err)
 	}
-	ok, err = upassword.VerifyPassword(uid, "password")
-	if ok != false || err != nil {
-		t.Fatal(err)
-	}
-	err = upassword.UpdatePassword(uid, "password")
-	if err != user.ErrUserNotExists {
-		t.Fatal(err)
-	}
+	ok = upassword.MustVerifyPassword(uid, "password")
+	err = herbsystem.Catch(func() {
+		upassword.MustUpdatePassword(uid, "password")
+		if err != user.ErrUserNotExists {
+			t.Fatal(err)
+		}
+	})
 	err = herbsystem.Catch(func() {
 		uroles.MustRoles(uid)
 	})
@@ -188,17 +187,12 @@ func TestService(t *testing.T) {
 	}
 	userpurge.MustExecPurge(s, uid)
 
-	ok, err = upassword.VerifyPassword(uid, "password")
-	if ok != false || err != nil {
-		t.Fatal(err)
-	}
-	err = upassword.UpdatePassword(uid, "password")
-	if err != nil {
-		t.Fatal(err)
-	}
-	ok, err = upassword.VerifyPassword(uid, "password")
-	if ok != true || err != nil {
-		t.Fatal(err)
+	ok = upassword.MustVerifyPassword(uid, "password")
+	upassword.MustUpdatePassword(uid, "password")
+
+	ok = upassword.MustVerifyPassword(uid, "password")
+	if ok != true {
+		t.Fatal()
 	}
 	r := uroles.MustRoles(uid)
 	if r == nil {
@@ -289,8 +283,8 @@ func TestService(t *testing.T) {
 	if st != status.StatusBanned || !ok {
 		t.Fatal(st)
 	}
-	ok, err = upassword.VerifyPassword(uid, "password")
-	if ok != true || err != nil {
+	ok = upassword.MustVerifyPassword(uid, "password")
+	if ok != true {
 		t.Fatal(err)
 	}
 	r = uroles.MustRoles(uid)

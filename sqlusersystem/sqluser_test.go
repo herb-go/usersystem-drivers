@@ -128,14 +128,11 @@ func TestService(t *testing.T) {
 	if err != user.ErrUserNotExists {
 		t.Fatal(err)
 	}
-	ok, err = upassword.VerifyPassword(uid, "password")
-	if ok != false || err != nil {
+	ok = upassword.MustVerifyPassword(uid, "password")
+	if ok != false {
 		t.Fatal(err)
 	}
-	err = upassword.UpdatePassword(uid, "ppppassword")
-	if err != nil {
-		t.Fatal(err)
-	}
+	upassword.MustUpdatePassword(uid, "ppppassword")
 	term := uterm.MustCurrentTerm(uid)
 	if term != "" {
 		t.Fatal(term)
@@ -164,16 +161,14 @@ func TestService(t *testing.T) {
 	}
 	userpurge.MustExecPurge(s, uid)
 
-	ok, err = upassword.VerifyPassword(uid, "password")
-	if ok != false || err != nil {
+	ok = upassword.MustVerifyPassword(uid, "password")
+	if ok != false {
 		t.Fatal(err)
 	}
-	err = upassword.UpdatePassword(uid, "password")
-	if err != nil {
-		t.Fatal(err)
-	}
-	ok, err = upassword.VerifyPassword(uid, "password")
-	if ok != true || err != nil {
+	upassword.MustUpdatePassword(uid, "password")
+
+	ok = upassword.MustVerifyPassword(uid, "password")
+	if ok != true {
 		t.Fatal(err)
 	}
 	term = uterm.MustCurrentTerm(uid)
@@ -237,8 +232,8 @@ func TestService(t *testing.T) {
 	if st != status.StatusBanned || !ok {
 		t.Fatal(st)
 	}
-	ok, err = upassword.VerifyPassword(uid, "password")
-	if ok != true || err != nil {
+	ok = upassword.MustVerifyPassword(uid, "password")
+	if ok != true {
 		t.Fatal(err)
 	}
 
