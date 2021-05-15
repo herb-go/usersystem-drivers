@@ -91,10 +91,8 @@ func TestService(t *testing.T) {
 		t.Fatal(ok)
 	}
 	usercreate.MustExecRemove(s, uid)
-	err = herbsystem.Catch(func() {
-		ustatus.MustLoadStatus(uid)
-	})
-	if err != user.ErrUserNotExists {
+	st, ok := ustatus.MustLoadStatus(uid)
+	if st != status.StatusUnkown || ok {
 		t.Fatal(err)
 	}
 	err = herbsystem.Catch(func() {
@@ -151,15 +149,21 @@ func TestService(t *testing.T) {
 	if err != user.ErrUserNotExists {
 		t.Fatal(err)
 	}
-	a, err := uaccounts.Accounts(uid)
-	if a != nil || err != user.ErrUserNotExists {
-		t.Fatal(err)
-	}
-	err = uaccounts.BindAccount(uid, user.NewAccount())
+	err = herbsystem.Catch(func() {
+		uaccounts.MustAccounts(uid)
+	})
 	if err != user.ErrUserNotExists {
 		t.Fatal(err)
 	}
-	err = uaccounts.UnbindAccount(uid, user.NewAccount())
+	err = herbsystem.Catch(func() {
+		uaccounts.MustBindAccount(uid, user.NewAccount())
+	})
+	if err != user.ErrUserNotExists {
+		t.Fatal(err)
+	}
+	err = herbsystem.Catch(func() {
+		uaccounts.MustUnbindAccount(uid, user.NewAccount())
+	})
 	if err != user.ErrUserNotExists {
 		t.Fatal(err)
 	}
@@ -167,15 +171,15 @@ func TestService(t *testing.T) {
 
 	usercreate.MustExecCreate(s, "test2")
 
-	st := ustatus.MustLoadStatus(uid)
-	if st != status.StatusNormal {
+	st, ok = ustatus.MustLoadStatus(uid)
+	if st != status.StatusNormal || !ok {
 		t.Fatal(st)
 	}
 	ustatus.MustUpdateStatus(uid, status.StatusBanned)
 
-	st = ustatus.MustLoadStatus(uid)
+	st, ok = ustatus.MustLoadStatus(uid)
 
-	if st != status.StatusBanned {
+	if st != status.StatusBanned || !ok {
 		t.Fatal(st)
 	}
 	ok = upassword.PasswordChangeable()
@@ -229,44 +233,40 @@ func TestService(t *testing.T) {
 	if p.Load("test1") != "test1value" || p.Load("notexist") != "" {
 		t.Fatal(p)
 	}
-	a, err = uaccounts.Accounts(uid)
-	if len(a.Data()) != 0 || err != nil {
+	a := uaccounts.MustAccounts(uid)
+	if len(a.Data()) != 0 {
 		t.Fatal(err)
 	}
 	acc := user.NewAccount()
 	acc.Account = "testacc"
-	accid, err := uaccounts.AccountToUID(acc)
-	if err != nil || accid != "" {
+	accid := uaccounts.MustAccountToUID(acc)
+	if accid != "" {
 		t.Fatal(accid, err)
 	}
-	err = uaccounts.BindAccount(uid, acc)
-	if err != nil {
-		t.Fatal(err)
+	uaccounts.MustBindAccount(uid, acc)
+
+	accid = uaccounts.MustAccountToUID(acc)
+	if accid != uid {
+		t.Fatal(accid)
 	}
-	accid, err = uaccounts.AccountToUID(acc)
-	if err != nil || accid != uid {
-		t.Fatal(accid, err)
-	}
-	err = uaccounts.BindAccount("test2", acc)
+	err = herbsystem.Catch(func() {
+		uaccounts.MustBindAccount("test2", acc)
+	})
 	if err != user.ErrAccountBindingExists {
 		t.Fatal(err)
 	}
-	err = uaccounts.UnbindAccount(uid, acc)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = uaccounts.UnbindAccount("test2", acc)
+	uaccounts.MustUnbindAccount(uid, acc)
+	err = herbsystem.Catch(func() {
+		uaccounts.MustUnbindAccount("test2", acc)
+	})
 	if err != user.ErrAccountUnbindingNotExists {
 		t.Fatal(err)
 	}
-	accid, err = uaccounts.AccountToUID(acc)
-	if err != nil || accid != "" {
-		t.Fatal(accid, err)
+	accid = uaccounts.MustAccountToUID(acc)
+	if accid != "" {
+		t.Fatal(accid)
 	}
-	err = uaccounts.BindAccount(uid, acc)
-	if err != nil {
-		t.Fatal(err)
-	}
+	uaccounts.MustBindAccount(uid, acc)
 	herbsystem.MustStop(s)
 	tomluser.Flush()
 	s = usersystem.New()
@@ -285,8 +285,8 @@ func TestService(t *testing.T) {
 	herbsystem.MustStart(s)
 	defer herbsystem.MustStop(s)
 
-	st = ustatus.MustLoadStatus(uid)
-	if st != status.StatusBanned {
+	st, ok = ustatus.MustLoadStatus(uid)
+	if st != status.StatusBanned || !ok {
 		t.Fatal(st)
 	}
 	ok, err = upassword.VerifyPassword(uid, "password")
@@ -310,9 +310,9 @@ func TestService(t *testing.T) {
 	if p.Load("test1") != "test1value" || p.Load("notexist") != "" {
 		t.Fatal(p)
 	}
-	accid, err = uaccounts.AccountToUID(acc)
-	if err != nil || accid != uid {
-		t.Fatal(accid, err)
+	accid = uaccounts.MustAccountToUID(acc)
+	if accid != uid {
+		t.Fatal(accid)
 	}
 	usercreate.MustExecRemove(s, uid)
 

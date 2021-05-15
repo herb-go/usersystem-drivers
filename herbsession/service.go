@@ -11,7 +11,7 @@ import (
 	"github.com/herb-go/herbsecurity/authority"
 	"github.com/vmihailenco/msgpack"
 
-	"github.com/herb-go/usersystem/httpusersystem/services/websession"
+	"github.com/herb-go/usersystem/httpusersystem/modules/websession"
 
 	"github.com/herb-go/usersystem"
 )

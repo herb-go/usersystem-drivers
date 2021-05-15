@@ -39,56 +39,56 @@ func (u *UIDAccount) uidToAccount(uid string) string {
 }
 
 //Accounts return account of give uid.
-func (u *UIDAccount) Accounts(uid string) (*user.Accounts, error) {
+func (u *UIDAccount) MustAccounts(uid string) *user.Accounts {
 	account := user.NewAccount()
 	account.Keyword = u.AccountKeyword
 	account.Account = u.uidToAccount(uid)
-	return &user.Accounts{account}, nil
+	return &user.Accounts{account}
 }
 
 //AccountToUID query uid by user account.
 //Return user id and any error if raised.
 //Return empty string as userid if account not found.
-func (u *UIDAccount) AccountToUID(account *user.Account) (uid string, err error) {
+func (u *UIDAccount) MustAccountToUID(account *user.Account) string {
 	if account.Keyword != u.AccountKeyword {
-		return "", ErrAccountKeywordNotMatch
+		panic(ErrAccountKeywordNotMatch)
 	}
-	return u.accountToUID(account.Account)
+	uid, err := u.accountToUID(account.Account)
+	if err != nil {
+		panic(err)
+	}
+	return uid
 }
 
 //BindAccount bind account to user.
-//Return any error if raised.
 //If account exists,user.ErrAccountBindingExists should be rasied.
-func (u *UIDAccount) BindAccount(uid string, account *user.Account) error {
+func (u *UIDAccount) MustBindAccount(uid string, account *user.Account) {
 	if account.Keyword != u.AccountKeyword {
-		return ErrAccountKeywordNotMatch
+		panic(ErrAccountKeywordNotMatch)
 	}
 	id, err := u.accountToUID(account.Account)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	if uid != id {
-		return ErrUIDAndAccountNotMatch
+		panic(ErrUIDAndAccountNotMatch)
 	}
-	return nil
 }
 
 //UnbindAccount unbind account from user.
 //Return any error if raised.
 //If account not exists,user.ErrAccountUnbindingNotExists should be rasied.
-func (u *UIDAccount) UnbindAccount(uid string, account *user.Account) error {
+func (u *UIDAccount) MustUnbindAccount(uid string, account *user.Account) {
 	if account.Keyword != u.AccountKeyword {
-		return ErrAccountKeywordNotMatch
+		panic(ErrAccountKeywordNotMatch)
 	}
 	id, err := u.accountToUID(account.Account)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	if uid != id {
-		return ErrUIDAndAccountNotMatch
+		panic(ErrUIDAndAccountNotMatch)
 	}
-	return nil
-
 }
 
 //Purge purge user data cache

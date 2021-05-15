@@ -69,20 +69,20 @@ func (u *Users) mustSave() {
 func (u *Users) save() error {
 	return u.Source.Save(u.GetAllUsers())
 }
-func (u *Users) MustLoadStatus(id string) status.Status {
+func (u *Users) MustLoadStatus(id string) (status.Status, bool) {
 	u.locker.RLock()
 	defer u.locker.RUnlock()
 	var st status.Status
 	userdata := u.uidmap[id]
 	if userdata == nil {
-		panic(user.ErrUserNotExists)
+		return status.StatusUnkown, false
 	}
 	if userdata.Banned {
 		st = status.StatusBanned
 	} else {
 		st = status.StatusNormal
 	}
-	return st
+	return st, true
 
 }
 func (u *Users) MustUpdateStatus(uid string, st status.Status) {
@@ -213,15 +213,15 @@ func (u *Users) SetRoles(uid string, r *role.Roles) error {
 	us.Roles = r
 	return nil
 }
-func (u *Users) Accounts(uid string) (*user.Accounts, error) {
+func (u *Users) MustAccounts(uid string) *user.Accounts {
 	u.locker.RLock()
 	defer u.locker.RUnlock()
 	us := u.uidmap[uid]
 	if us == nil {
-		return nil, user.ErrUserNotExists
+		panic(user.ErrUserNotExists)
 	}
 	accs := user.Accounts(us.Accounts)
-	return &accs, nil
+	return &accs
 }
 
 func (u *Users) accountToUID(account *user.Account) (uid string, err error) {
@@ -236,52 +236,54 @@ func (u *Users) accountToUID(account *user.Account) (uid string, err error) {
 }
 
 //AccountToUID query uid by user account.
-//Return user id and anyidFactory error if raised.
+//Return user id .
 //Return empty string as userid if account not found.
-func (u *Users) AccountToUID(account *user.Account) (uid string, err error) {
+func (u *Users) MustAccountToUID(account *user.Account) (uid string) {
 	u.locker.RLock()
 	defer u.locker.RUnlock()
-	return u.accountToUID(account)
+	uid, err := u.accountToUID(account)
+	if err != nil {
+		panic(err)
+	}
+	return uid
 }
 
 //BindAccount bind account to user.
-//Return any error if raised.
 //If account exists,user.ErrAccountBindingExists should be rasied.
-func (u *Users) BindAccount(uid string, account *user.Account) error {
+func (u *Users) MustBindAccount(uid string, account *user.Account) {
 	u.locker.Lock()
 	defer u.locker.Unlock()
 	accountuser := u.uidmap[uid]
 	if accountuser == nil {
-		return user.ErrUserNotExists
+		panic(user.ErrUserNotExists)
 	}
 	accountid, err := u.accountToUID(account)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	if accountid != "" {
-		return user.ErrAccountBindingExists
+		panic(user.ErrAccountBindingExists)
 	}
 	accountuser.Accounts = append(accountuser.Accounts, account)
 	u.accountmap[account.Account] = append(u.accountmap[account.Account], accountuser)
-	return u.save()
+	u.mustSave()
 }
 
 //UnbindAccount unbind account from user.
-//Return any error if raised.
 //If account not exists,user.ErrAccountUnbindingNotExists should be rasied.
-func (u *Users) UnbindAccount(uid string, account *user.Account) error {
+func (u *Users) MustUnbindAccount(uid string, account *user.Account) {
 	u.locker.Lock()
 	defer u.locker.Unlock()
 	accountuser := u.uidmap[uid]
 	if accountuser == nil {
-		return user.ErrUserNotExists
+		panic(user.ErrUserNotExists)
 	}
 	accountid, err := u.accountToUID(account)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	if accountid == "" || accountid != uid {
-		return user.ErrAccountUnbindingNotExists
+		panic(user.ErrAccountUnbindingNotExists)
 	}
 	for k := range u.uidmap[accountid].Accounts {
 		if u.uidmap[accountid].Accounts[k].Equal(account) {
@@ -295,7 +297,7 @@ func (u *Users) UnbindAccount(uid string, account *user.Account) error {
 			break
 		}
 	}
-	return u.save()
+	u.mustSave()
 }
 
 func (u *Users) MustCurrentTerm(uid string) string {
