@@ -110,6 +110,9 @@ func (s *Service) SessionMiddleware() func(w http.ResponseWriter, r *http.Reques
 func (s *Service) MustGetRequestSession(r *http.Request, st usersystem.SessionType) *usersystem.Session {
 	session := s.Store.RequestSession(r)
 	token := session.Token()
+	if token == "" {
+		return nil
+	}
 	payloads := authority.NewPayloads()
 	data, err := session.Get(s.payloadsField())
 	if err != nil {
