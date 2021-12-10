@@ -15,13 +15,13 @@ import (
 	"github.com/herb-go/herbsystem"
 	"github.com/herb-go/usersystem"
 	"github.com/herb-go/usersystem-drivers/herbsession"
-	"github.com/herb-go/usersystem/httpusersystem/services/websession"
+	"github.com/herb-go/usersystem/httpusersystem/modules/websession"
 )
 
 func testClientConfig() *herbsession.Config {
 
 	config := &httpsession.Config{
-		DisableAutoStart:   false,
+		AutoStart:          false,
 		MaxLifetime:        3600 * 168,
 		Timeout:            3600,
 		LastActiveInterval: 100,
@@ -226,7 +226,7 @@ func TestClientService(t *testing.T) {
 func testKeyValueConfig() *herbsession.Config {
 
 	config := &httpsession.Config{
-		DisableAutoStart:   false,
+		AutoStart:          false,
 		MaxLifetime:        3600 * 168,
 		Timeout:            3600,
 		LastActiveInterval: 100,
