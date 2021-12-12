@@ -6,9 +6,6 @@ import (
 	"github.com/herb-go/datamodules/herbcache/cachepreset"
 	"github.com/herb-go/herbdata/dataencoding/msgpackencoding"
 	"github.com/herb-go/usersystem"
-	"github.com/herb-go/usersystem/modules/useraccount"
-	"github.com/herb-go/usersystem/modules/userstatus"
-	"github.com/herb-go/usersystem/modules/userterm"
 )
 
 type Config struct {
@@ -16,6 +13,8 @@ type Config struct {
 	PrefixStatus  string
 	PrefixTerm    string
 	PrefixAccount string
+	PrefixRole    string
+	PrefixProfile string
 }
 
 func (c *Config) Execute(s *usersystem.UserSystem) error {
@@ -32,41 +31,11 @@ func (c *Config) Execute(s *usersystem.UserSystem) error {
 		PrefixStatus:  c.PrefixStatus,
 		PrefixTerm:    c.PrefixTerm,
 		PrefixAccount: c.PrefixAccount,
+		PrefixRole:    c.PrefixRole,
+		PrefixProfile: c.PrefixProfile,
 	}
-	if cache.PrefixStatus != "" {
-		uss := userstatus.MustGetModule(s)
-		if uss == nil {
-			return ErrUserStatusServiceNotInstalled
-		}
-		us, err := cache.CreateStatus(uss.Service, cache.Preset)
-		if err != nil {
-			return err
-		}
-		uss.Service = us
-	}
-	if cache.PrefixTerm != "" {
-		ust := userterm.MustGetModule(s)
-		if ust == nil {
-			return ErrUserTermServiceNotInstalled
-		}
-		us, err := cache.CreateTerm(ust.Service, cache.Preset)
-		if err != nil {
-			return err
-		}
-		ust.Service = us
-	}
-	if cache.PrefixAccount != "" {
-		usa := useraccount.MustGetModule(s)
-		if usa == nil {
-			return ErrUserAccountServiceNotInstalled
-		}
-		us, err := cache.CreateAccount(usa.Service, cache.Preset)
-		if err != nil {
-			return err
-		}
-		usa.Service = us
-	}
-	return nil
+
+	return cache.Execute(s)
 }
 
 var DirectiveFactory = func(loader func(v interface{}) error) (usersystem.Directive, error) {
