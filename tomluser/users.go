@@ -131,7 +131,7 @@ func (u *Users) getAfterLast(last string, users []string, reverse bool) []string
 		return users
 	}
 	for k := range users {
-		if users[k] > last {
+		if (!reverse && users[k] > last) || (reverse && users[k] < last) {
 			return users[k:]
 		}
 	}

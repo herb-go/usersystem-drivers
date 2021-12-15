@@ -143,7 +143,7 @@ func TestService(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = herbsystem.Catch(func() {
-		uprofiles.MustUpdateProfile(nil, uid, nil)
+		uprofiles.MustUpdateProfile(uid, nil)
 	})
 	if err != user.ErrUserNotExists {
 		t.Fatal(err)
@@ -218,7 +218,7 @@ func TestService(t *testing.T) {
 		t.Fatal(p)
 	}
 	p.With("test1", "test1value").With("notexist", "notexistvalue")
-	uprofiles.MustUpdateProfile(nil, uid, p)
+	uprofiles.MustUpdateProfile(uid, p)
 
 	p = uprofiles.MustLoadProfile(uid)
 	if len(p.Data()) != 1 || err != nil {
@@ -324,12 +324,17 @@ func TestService(t *testing.T) {
 	if len(users) != 4 {
 		t.Fatal(users, err)
 	}
+
 	users = ustatus.Service.MustListUsersByStatus("", 3, false, status.StatusNormal, status.StatusBanned)
 	if len(users) != 3 {
 		t.Fatal(users)
 	}
 	users = ustatus.Service.MustListUsersByStatus("test3", 3, false, status.StatusNormal, status.StatusBanned)
 	if len(users) != 2 {
+		t.Fatal(users)
+	}
+	users = ustatus.Service.MustListUsersByStatus("test3", 3, true, status.StatusNormal, status.StatusBanned)
+	if len(users) != 1 {
 		t.Fatal(users)
 	}
 	users = ustatus.Service.MustListUsersByStatus("test2", 1, false, status.StatusBanned)
@@ -340,6 +345,7 @@ func TestService(t *testing.T) {
 	if len(users) != 2 {
 		t.Fatal(users)
 	}
+
 }
 
 func TestHash(t *testing.T) {
